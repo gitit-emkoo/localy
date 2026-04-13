@@ -3,7 +3,8 @@ import { supabase } from '@/src/lib/supabase/client';
 export type MyActivitySummary = {
   joinedMissionCount: number;
   receivedReactionCount: number;
-  sentExpressionCount: number;
+  /** 다른 사람 제출에 남긴 하트 수 */
+  sentReactionCount: number;
 };
 
 function countOrZero(value: number | null): number {
@@ -24,69 +25,39 @@ export async function loadMyActivitySummary(profileId: string): Promise<{
     return { data: null, error: new Error(joinedRes.error.message) };
   }
 
-  const mySubmissionRes = await supabase
-    .from('submissions')
-    .select('id')
-    .eq('user_id', profileId)
-    .eq('status', 'submitted');
+  const mySubmissionRes = await supabase.from('submissions').select('id').eq('user_id', profileId).eq('status', 'submitted');
 
   if (mySubmissionRes.error) {
     return { data: null, error: new Error(mySubmissionRes.error.message) };
   }
 
   const mySubmissionIds = (mySubmissionRes.data ?? []).map((r) => String(r.id));
-  let myCardIds: string[] = [];
-  if (mySubmissionIds.length > 0) {
-    const [cardsA, cardsB] = await Promise.all([
-      supabase.from('result_cards').select('id').in('submission_a_id', mySubmissionIds),
-      supabase.from('result_cards').select('id').in('submission_b_id', mySubmissionIds),
-    ]);
-    if (cardsA.error) {
-      return { data: null, error: new Error(cardsA.error.message) };
-    }
-    if (cardsB.error) {
-      return { data: null, error: new Error(cardsB.error.message) };
-    }
-    const merged = new Set<string>();
-    for (const row of cardsA.data ?? []) merged.add(String(row.id));
-    for (const row of cardsB.data ?? []) merged.add(String(row.id));
-    myCardIds = Array.from(merged);
-  }
 
   let receivedReactionCount = 0;
-  if (myCardIds.length > 0) {
-    const [iconRes, exprRes] = await Promise.all([
-      supabase
-        .from('card_icon_reactions')
-        .select('id', { count: 'exact', head: true })
-        .in('result_card_id', myCardIds)
-        .neq('user_id', profileId),
-      supabase
-        .from('card_expression_reactions')
-        .select('id', { count: 'exact', head: true })
-        .in('result_card_id', myCardIds)
-        .neq('user_id', profileId),
-    ]);
-    if (iconRes.error) return { data: null, error: new Error(iconRes.error.message) };
-    if (exprRes.error) return { data: null, error: new Error(exprRes.error.message) };
-    receivedReactionCount = countOrZero(iconRes.count) + countOrZero(exprRes.count);
+  if (mySubmissionIds.length > 0) {
+    const receivedRes = await supabase
+      .from('submission_likes')
+      .select('id', { count: 'exact', head: true })
+      .in('submission_id', mySubmissionIds)
+      .neq('user_id', profileId);
+    if (receivedRes.error) return { data: null, error: new Error(receivedRes.error.message) };
+    receivedReactionCount = countOrZero(receivedRes.count);
   }
 
-  const sentExprRes = await supabase
-    .from('card_expression_reactions')
+  const sentRes = await supabase
+    .from('submission_likes')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', profileId);
-  if (sentExprRes.error) {
-    return { data: null, error: new Error(sentExprRes.error.message) };
+  if (sentRes.error) {
+    return { data: null, error: new Error(sentRes.error.message) };
   }
 
   return {
     data: {
       joinedMissionCount: countOrZero(joinedRes.count),
       receivedReactionCount,
-      sentExpressionCount: countOrZero(sentExprRes.count),
+      sentReactionCount: countOrZero(sentRes.count),
     },
     error: null,
   };
 }
-

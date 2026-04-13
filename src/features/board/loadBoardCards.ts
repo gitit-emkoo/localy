@@ -28,7 +28,7 @@ type ResultCardRow = {
   team_id: string;
   submission_a_id: string;
   submission_b_id: string;
-  total_icon_reaction_count: number;
+  total_like_count: number;
   total_expression_reaction_count: number;
   created_at: string;
 };
@@ -84,13 +84,13 @@ export async function loadBoardCards(
   let query = supabase
     .from('result_cards')
     .select(
-      'id, mission_id, team_id, submission_a_id, submission_b_id, total_icon_reaction_count, total_expression_reaction_count, created_at',
+      'id, mission_id, team_id, submission_a_id, submission_b_id, total_like_count, total_expression_reaction_count, created_at',
     )
     .eq('status', 'open');
 
   if (sort === 'popular') {
     query = query
-      .order('total_icon_reaction_count', { ascending: false })
+      .order('total_like_count', { ascending: false })
       .order('total_expression_reaction_count', { ascending: false })
       .order('created_at', { ascending: false });
   } else {
@@ -158,27 +158,6 @@ export async function loadBoardCards(
     ((teamRes.data ?? []) as TeamCountryLookup[]).map((t) => [String(t.id), t]),
   );
 
-  const cardIds = cards.map((c) => c.id);
-  const [iconRowsRes, exprRowsRes] =
-    cardIds.length > 0
-      ? await Promise.all([
-          supabase.from('card_icon_reactions').select('result_card_id').in('result_card_id', cardIds),
-          supabase.from('card_expression_reactions').select('result_card_id').in('result_card_id', cardIds),
-        ])
-      : [{ data: [], error: null }, { data: [], error: null }];
-  if (iconRowsRes.error) return { data: [], error: err('card_icon_reactions', iconRowsRes.error.message) };
-  if (exprRowsRes.error) return { data: [], error: err('card_expression_reactions', exprRowsRes.error.message) };
-
-  const reactionCountMap = new Map<string, number>();
-  for (const row of iconRowsRes.data ?? []) {
-    const key = String(row.result_card_id);
-    reactionCountMap.set(key, (reactionCountMap.get(key) ?? 0) + 1);
-  }
-  for (const row of exprRowsRes.data ?? []) {
-    const key = String(row.result_card_id);
-    reactionCountMap.set(key, (reactionCountMap.get(key) ?? 0) + 1);
-  }
-
   const rows = await Promise.all(
     cards.map(async (c) => {
       const sA = submissionMap.get(c.submission_a_id);
@@ -200,7 +179,7 @@ export async function loadBoardCards(
         countryCodeB: ccB,
         viewerCountryCode,
         flagPair: buildFlagPair(ccA, ccB, viewerCountryCode),
-        totalReactionCount: reactionCountMap.get(c.id) ?? 0,
+        totalReactionCount: typeof c.total_like_count === 'number' ? c.total_like_count : 0,
         createdAt: c.created_at,
       } satisfies BoardCardItem;
     }),

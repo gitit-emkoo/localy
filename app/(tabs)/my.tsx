@@ -9,6 +9,7 @@ import { Text } from '@/components/Themed';
 import { loadMyProfile, type MyProfileRow } from '@/src/features/profile/loadMyProfile';
 import { loadMyActivitySummary, type MyActivitySummary } from '@/src/features/my/loadMyDashboard';
 import { countryCodeToFlag } from '@/src/lib/countryFlag';
+import { supabase } from '@/src/lib/supabase/client';
 
 export default function MyScreen() {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ export default function MyScreen() {
   const [summary, setSummary] = useState<MyActivitySummary>({
     joinedMissionCount: 0,
     receivedReactionCount: 0,
-    sentExpressionCount: 0,
+    sentReactionCount: 0,
   });
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -43,7 +44,7 @@ export default function MyScreen() {
 
     const summaryRes = await loadMyActivitySummary(res.data.profile.id);
     if (summaryRes.error || !summaryRes.data) {
-      setSummary({ joinedMissionCount: 0, receivedReactionCount: 0, sentExpressionCount: 0 });
+      setSummary({ joinedMissionCount: 0, receivedReactionCount: 0, sentReactionCount: 0 });
       setSummaryError(summaryRes.error?.message ?? null);
     } else {
       setSummary(summaryRes.data);
@@ -139,7 +140,7 @@ export default function MyScreen() {
             <View style={styles.summaryRow}>
               <SummaryItem value={summary.joinedMissionCount} label={t('my.summaryJoined')} />
               <SummaryItem value={summary.receivedReactionCount} label={t('my.summaryReceived')} />
-              <SummaryItem value={summary.sentExpressionCount} label={t('my.summarySent')} />
+              <SummaryItem value={summary.sentReactionCount} label={t('my.summarySent')} />
             </View>
           </View>
 

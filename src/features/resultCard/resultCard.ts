@@ -1,5 +1,4 @@
 import { supabase } from '@/src/lib/supabase/client';
-import type { IconReactionType } from '@/src/types/domain';
 
 export type ResultCardDetail = {
   id: string;
@@ -8,6 +7,7 @@ export type ResultCardDetail = {
   missionCategoryKey: string;
   compareLine: string | null;
   itemA: {
+    submissionId: string;
     userId: string;
     nickname: string;
     countryCode: string;
@@ -16,8 +16,11 @@ export type ResultCardDetail = {
     shortBio: string;
     photoUrl: string;
     captionOriginal: string;
+    likeCount: number;
+    myLike: boolean;
   };
   itemB: {
+    submissionId: string;
     userId: string;
     nickname: string;
     countryCode: string;
@@ -26,14 +29,14 @@ export type ResultCardDetail = {
     shortBio: string;
     photoUrl: string;
     captionOriginal: string;
+    likeCount: number;
+    myLike: boolean;
   };
-  iconReactionSummary: Record<IconReactionType, number>;
   expressionSummary: Array<{ expressionKey: string; expressionText: string; count: number }>;
   viewerState: {
-    myIconReaction: IconReactionType | null;
     myExpressionReaction: string | null;
     isSaved: boolean;
-    /** 내 제출이 포함된 결과 카드 — 저장(북마크) 대상 아님 */
+    /** 내 제출이 포함된 결과 카드 — 저장 불가; 표현 선택만 제한 */
     isOwnResultCard: boolean;
   };
 };
@@ -58,10 +61,6 @@ async function toSignedUrl(path: string): Promise<string> {
     return '';
   }
   return signed.data.signedUrl;
-}
-
-function defaultIconSummary(): Record<IconReactionType, number> {
-  return { interesting: 0, nice: 0, surprised: 0, relatable: 0 };
 }
 
 export async function fetchResultCardDetail(resultCardId: string): Promise<{ data: ResultCardDetail | null; error: Error | null }> {
@@ -121,20 +120,28 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
 
   const [photoA, photoB] = await Promise.all([toSignedUrl(sA.photo_url), toSignedUrl(sB.photo_url)]);
 
-  const iconRes = await supabase
-    .from('card_icon_reactions')
-    .select('user_id, reaction_type')
-    .eq('result_card_id', card.id);
-  if (iconRes.error) {
-    return { data: null, error: new Error(iconRes.error.message) };
+  const likesRes = await supabase
+    .from('submission_likes')
+    .select('submission_id, user_id')
+    .in('submission_id', [card.submission_a_id, card.submission_b_id]);
+  if (likesRes.error) {
+    return { data: null, error: new Error(likesRes.error.message) };
   }
 
-  const iconSummary = defaultIconSummary();
-  let myIconReaction: IconReactionType | null = null;
-  for (const r of iconRes.data ?? []) {
-    const rt = String(r.reaction_type) as IconReactionType;
-    if (rt in iconSummary) iconSummary[rt] += 1;
-    if (String(r.user_id) === meId) myIconReaction = rt;
+  let likeCountA = 0;
+  let likeCountB = 0;
+  let myLikeA = false;
+  let myLikeB = false;
+  for (const row of likesRes.data ?? []) {
+    const sid = String(row.submission_id);
+    const uid = String(row.user_id);
+    if (sid === card.submission_a_id) {
+      likeCountA += 1;
+      if (uid === meId) myLikeA = true;
+    } else if (sid === card.submission_b_id) {
+      likeCountB += 1;
+      if (uid === meId) myLikeB = true;
+    }
   }
 
   const exprRes = await supabase
@@ -176,6 +183,7 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
       missionCategoryKey: String(missionRes.data.category_key),
       compareLine: card.compare_line,
       itemA: {
+        submissionId: String(sA.id),
         userId: String(pA.id),
         nickname: String(pA.nickname),
         countryCode: String(pA.country_code),
@@ -184,8 +192,11 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
         shortBio: String(pA.short_bio),
         photoUrl: photoA,
         captionOriginal: String(sA.caption_original),
+        likeCount: likeCountA,
+        myLike: myLikeA,
       },
       itemB: {
+        submissionId: String(sB.id),
         userId: String(pB.id),
         nickname: String(pB.nickname),
         countryCode: String(pB.country_code),
@@ -194,11 +205,11 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
         shortBio: String(pB.short_bio),
         photoUrl: photoB,
         captionOriginal: String(sB.caption_original),
+        likeCount: likeCountB,
+        myLike: myLikeB,
       },
-      iconReactionSummary: iconSummary,
       expressionSummary: Array.from(exprMap.values()).sort((a, b) => b.count - a.count),
       viewerState: {
-        myIconReaction,
         myExpressionReaction,
         isSaved,
         isOwnResultCard,
@@ -208,43 +219,38 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
   };
 }
 
-export async function toggleIconReaction(resultCardId: string, reactionType: IconReactionType) {
+export async function toggleSubmissionLike(submissionId: string): Promise<{ error: Error | null }> {
   const meId = await getMyProfileId();
-  if (!meId) return { error: new Error('not_signed_in') } as const;
+  if (!meId) return { error: new Error('not_signed_in') };
 
-  const my = await supabase
-    .from('card_icon_reactions')
-    .select('id, reaction_type')
-    .eq('result_card_id', resultCardId)
+  const existing = await supabase
+    .from('submission_likes')
+    .select('id')
+    .eq('submission_id', submissionId)
     .eq('user_id', meId)
     .maybeSingle();
-  if (my.error) return { error: new Error(my.error.message) } as const;
+  if (existing.error) return { error: new Error(existing.error.message) };
 
-  const prevType = my.data?.reaction_type as IconReactionType | undefined;
-  if (prevType === reactionType) {
-    const del = await supabase.from('card_icon_reactions').delete().eq('id', my.data.id);
-    return { error: del.error ? new Error(del.error.message) : null } as const;
+  if (existing.data?.id) {
+    const del = await supabase.from('submission_likes').delete().eq('id', existing.data.id);
+    return { error: del.error ? new Error(del.error.message) : null };
   }
 
-  if (my.data?.id) {
-    const upd = await supabase
-      .from('card_icon_reactions')
-      .update({ reaction_type: reactionType })
-      .eq('id', my.data.id);
-    return { error: upd.error ? new Error(upd.error.message) : null } as const;
-  }
-
-  const ins = await supabase.from('card_icon_reactions').insert({
-    result_card_id: resultCardId,
+  const ins = await supabase.from('submission_likes').insert({
+    submission_id: submissionId,
     user_id: meId,
-    reaction_type: reactionType,
   });
-  return { error: ins.error ? new Error(ins.error.message) : null } as const;
+  return { error: ins.error ? new Error(ins.error.message) : null };
 }
 
 export async function setExpressionReaction(input: { resultCardId: string; expressionKey: string; expressionText: string }) {
   const meId = await getMyProfileId();
   if (!meId) return { error: new Error('not_signed_in') } as const;
+
+  const isParticipant = await viewerIsParticipantInResultCard(input.resultCardId, meId);
+  if (isParticipant) {
+    return { error: new Error('own_result_card') } as const;
+  }
 
   const up = await supabase.from('card_expression_reactions').upsert(
     {
@@ -275,7 +281,7 @@ async function viewerIsParticipantInResultCard(resultCardId: string, meId: strin
 
 export async function toggleSavedCard(resultCardId: string) {
   const meId = await getMyProfileId();
-  if (!meId) return { error: new Error('not_signed_in') } as const;
+  if (!meId) return { error: new Error('not_signed_in'), saved: null } as const;
 
   const cur = await supabase
     .from('saved_cards')

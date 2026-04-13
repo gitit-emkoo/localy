@@ -12,8 +12,6 @@ export type TeamMissionState =
 
 export type ResultCardStatus = 'locked' | 'open';
 
-export type IconReactionType = 'interesting' | 'nice' | 'surprised' | 'relatable';
-
 export type AppLanguageCode = 'ko' | 'en' | 'ja' | 'pt-BR';
 
 /** MVP 출시 8개국 ISO 3166-1 alpha-2 */

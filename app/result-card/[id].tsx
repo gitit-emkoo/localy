@@ -22,11 +22,10 @@ import { getExpressionOptions } from '@/src/constants/resultCardExpressions';
 import {
   fetchResultCardDetail,
   setExpressionReaction,
-  toggleIconReaction,
   toggleSavedCard,
+  toggleSubmissionLike,
   type ResultCardDetail,
 } from '@/src/features/resultCard/resultCard';
-import type { IconReactionType } from '@/src/types/domain';
 import { countryCodeToFlag } from '@/src/lib/countryFlag';
 
 /** ? ?? ??? ??(`team-mission.tsx`)? ??? ?? ??? */
@@ -43,7 +42,7 @@ export default function ResultCardDetailScreen() {
   const [detail, setDetail] = useState<ResultCardDetail | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
 
-  const [iconLoading, setIconLoading] = useState<IconReactionType | null>(null);
+  const [likeLoadingId, setLikeLoadingId] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [exprOpen, setExprOpen] = useState(false);
   const [exprDraft, setExprDraft] = useState<string | null>(null);
@@ -86,13 +85,6 @@ export default function ResultCardDetailScreen() {
     setRefreshing(false);
   }
 
-  const iconItems: Array<{ type: IconReactionType; iconName: React.ComponentProps<typeof FontAwesome>['name']; labelKey: string }> = [
-    { type: 'interesting', iconName: 'eye', labelKey: 'resultCard.icon.interesting' },
-    { type: 'nice', iconName: 'heart', labelKey: 'resultCard.icon.nice' },
-    { type: 'surprised', iconName: 'exclamation-circle', labelKey: 'resultCard.icon.surprised' },
-    { type: 'relatable', iconName: 'globe', labelKey: 'resultCard.icon.relatable' },
-  ];
-
   const expressionOptions = useMemo(() => {
     if (!detail) return [];
     return getExpressionOptions(detail.missionCategoryKey);
@@ -112,11 +104,11 @@ export default function ResultCardDetailScreen() {
     [t],
   );
 
-  async function onToggleIcon(rt: IconReactionType) {
-    if (!detail || iconLoading) return;
-    setIconLoading(rt);
-    const res = await toggleIconReaction(detail.id, rt);
-    setIconLoading(null);
+  async function onTogglePhotoLike(submissionId: string) {
+    if (!detail || likeLoadingId) return;
+    setLikeLoadingId(submissionId);
+    const res = await toggleSubmissionLike(submissionId);
+    setLikeLoadingId(null);
     if (res.error) {
       Alert.alert(t('resultCard.reactionFailed'), res.error.message);
       return;
@@ -131,7 +123,7 @@ export default function ResultCardDetailScreen() {
     setSaveLoading(false);
     if (res.error) {
       if (String(res.error.message) === 'own_result_card') {
-        Alert.alert(t('resultCard.cannotSaveOwnTitle'), t('resultCard.cannotSaveOwnHint'));
+        Alert.alert('', t('resultCard.cannotSaveOwnHint'));
       } else {
         Alert.alert(t('resultCard.saveFailed'), res.error.message);
       }
@@ -160,7 +152,11 @@ export default function ResultCardDetailScreen() {
     });
     setExprSubmitting(false);
     if (res.error) {
-      Alert.alert(t('resultCard.expressionFailed'), res.error.message);
+      if (String(res.error.message) === 'own_result_card') {
+        Alert.alert(t('resultCard.cannotReactOwnTitle'), t('resultCard.cannotReactOwnHint'));
+      } else {
+        Alert.alert(t('resultCard.expressionFailed'), res.error.message);
+      }
       return;
     }
     setExprOpen(false);
@@ -218,6 +214,8 @@ export default function ResultCardDetailScreen() {
     );
   }
 
+  const canReact = !detail.viewerState.isOwnResultCard;
+
   return (
     <>
       <Stack.Screen options={stackScreenOptions} />
@@ -231,7 +229,7 @@ export default function ResultCardDetailScreen() {
             <Text style={[styles.compare, styles.compareFlex]} numberOfLines={5}>
               {detail.compareLine || t('resultCard.compareFallback')}
             </Text>
-            {!detail.viewerState.isOwnResultCard ? (
+            {canReact ? (
               <View style={styles.topIconActions}>
                 <Pressable
                   accessibilityRole="button"
@@ -276,6 +274,10 @@ export default function ResultCardDetailScreen() {
             shortBio={detail.itemA.shortBio}
             photoUrl={detail.itemA.photoUrl}
             caption={detail.itemA.captionOriginal}
+            likeCount={detail.itemA.likeCount}
+            myLike={detail.itemA.myLike}
+            likeBusy={likeLoadingId === detail.itemA.submissionId}
+            onToggleLike={() => void onTogglePhotoLike(detail.itemA.submissionId)}
           />
         </View>
 
@@ -288,36 +290,25 @@ export default function ResultCardDetailScreen() {
             shortBio={detail.itemB.shortBio}
             photoUrl={detail.itemB.photoUrl}
             caption={detail.itemB.captionOriginal}
+            likeCount={detail.itemB.likeCount}
+            myLike={detail.itemB.myLike}
+            likeBusy={likeLoadingId === detail.itemB.submissionId}
+            onToggleLike={() => void onTogglePhotoLike(detail.itemB.submissionId)}
           />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('resultCard.iconTitle')}</Text>
-          <View style={styles.iconRow}>
-            {iconItems.map((item) => {
-              const selected = detail.viewerState.myIconReaction === item.type;
-              const count = detail.iconReactionSummary[item.type] ?? 0;
-              return (
-                <Pressable
-                  key={item.type}
-                  disabled={Boolean(iconLoading)}
-                  onPress={() => void onToggleIcon(item.type)}
-                  style={[styles.iconBtn, selected ? styles.iconBtnSelected : null]}>
-                  <FontAwesome name={item.iconName} size={18} color={selected ? '#1D4ED8' : '#374151'} />
-                  <View style={styles.iconTextRow}>
-                    <Text style={styles.iconLabel}>{t(item.labelKey)}</Text>
-                    <Text style={styles.iconCount}>{count}</Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>{t('resultCard.expressionTitle')}</Text>
-            <Pressable onPress={() => setExprOpen(true)} style={styles.exprPickBtn}>
+            <Pressable
+              onPress={() => {
+                if (detail.viewerState.isOwnResultCard) {
+                  Alert.alert(t('resultCard.expressionPickBlockedTitle'), t('resultCard.expressionPickBlockedHint'));
+                  return;
+                }
+                setExprOpen(true);
+              }}
+              style={styles.exprPickBtn}>
               <Text style={styles.exprPickBtnText}>{t('resultCard.expressionPick')}</Text>
             </Pressable>
           </View>
@@ -334,7 +325,6 @@ export default function ResultCardDetailScreen() {
         <View style={[styles.section, styles.sectionLast]}>
           {detail.viewerState.isOwnResultCard ? (
             <View style={styles.ownCardSaveBlock}>
-              <Text style={styles.cannotSaveOwnTitle}>{t('resultCard.cannotSaveOwnTitle')}</Text>
               <Text style={styles.cannotSaveOwnHint}>{t('resultCard.cannotSaveOwnHint')}</Text>
             </View>
           ) : null}
@@ -385,7 +375,12 @@ function ResultItemCard(props: {
   shortBio: string;
   photoUrl: string;
   caption: string;
+  likeCount: number;
+  myLike: boolean;
+  likeBusy: boolean;
+  onToggleLike: () => void;
 }) {
+  const { t } = useTranslation();
   const flag = countryCodeToFlag(props.countryCode);
 
   return (
@@ -400,10 +395,30 @@ function ResultItemCard(props: {
           <Text style={styles.countryBadgeText}>{props.countryName}</Text>
         </View>
       </View>
-      <Text style={styles.cardMeta}>
-        {props.age ? `${props.age}` : '-'} / {props.shortBio}
-      </Text>
-      {props.photoUrl ? <Image source={{ uri: props.photoUrl }} style={styles.photo} resizeMode="cover" /> : null}
+      <View style={styles.metaLikeRow}>
+        <Text style={styles.cardMetaFlex} numberOfLines={2}>
+          {props.age ? `${props.age}` : '-'} / {props.shortBio}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('resultCard.submissionLikeA11y')}
+          disabled={props.likeBusy}
+          onPress={props.onToggleLike}
+          style={({ pressed }) => [styles.inlineLikeBtn, pressed ? styles.inlineLikePressed : null]}
+          hitSlop={8}>
+          <FontAwesome
+            name={props.myLike ? 'heart' : 'heart-o'}
+            size={18}
+            color={props.myLike ? '#E11D48' : '#6B7280'}
+          />
+          <Text style={styles.inlineLikeCount}>{props.likeCount}</Text>
+        </Pressable>
+      </View>
+      {props.photoUrl ? (
+        <View style={styles.photoWrap}>
+          <Image source={{ uri: props.photoUrl }} style={styles.photo} resizeMode="cover" />
+        </View>
+      ) : null}
       <Text style={styles.caption}>{props.caption}</Text>
     </View>
   );
@@ -521,14 +536,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2F6BFF',
   },
-  cardMeta: {
+  metaLikeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  cardMetaFlex: {
+    flex: 1,
     fontSize: 13,
     opacity: 0.75,
+    lineHeight: 18,
+    minWidth: 0,
+  },
+  inlineLikeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingLeft: 8,
+  },
+  inlineLikePressed: {
+    opacity: 0.65,
+  },
+  inlineLikeCount: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#374151',
+    minWidth: 18,
+  },
+  photoWrap: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   photo: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 12,
     backgroundColor: '#F3F4F6',
   },
   caption: {
@@ -538,15 +581,10 @@ const styles = StyleSheet.create({
   ownCardSaveBlock: {
     gap: 8,
   },
-  cannotSaveOwnTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    lineHeight: 22,
-  },
   cannotSaveOwnHint: {
-    fontSize: 13,
-    lineHeight: 19,
-    opacity: 0.72,
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.75,
   },
   sectionTitle: {
     fontSize: 17,
@@ -568,40 +606,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#374151',
-  },
-  iconRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  iconBtn: {
-    minWidth: '48%',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: PANEL_BORDER,
-    padding: 10,
-    gap: 8,
-    backgroundColor: '#fff',
-  },
-  iconBtnSelected: {
-    borderColor: '#2F6BFF',
-    backgroundColor: '#EEF2FF',
-  },
-  iconLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    flex: 1,
-  },
-  iconCount: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#1F2937',
-  },
-  iconTextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
   },
   exprSummaryWrap: {
     gap: 4,
