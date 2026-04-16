@@ -1,7 +1,7 @@
 ﻿{
   "app": { "name": "Localy" },
   "tabs": { "home": "ホーム", "board": "ボード", "world": "ワールド", "my": "マイ" },
-  "nav": { "notifications": "通知", "resultView": "結果" },
+  "nav": { "notifications": "通知", "resultView": "ミッション結果" },
   "auth": {
     "loginHeading": "ログイン",
     "signupHeading": "新規登録",
@@ -62,18 +62,22 @@
   },
   "home": {
     "placeholder": "ホームのコンテンツは次のステップで接続します。",
-    "todayMission": "今日のミッション",
+    "todayMission": "ライブミッション",
     "noMission": "今日の公開ミッションがありません",
     "noMissionHint": "Supabaseで今日の日付のpublishedミッションを追加してください（migrations/002参照）。",
-    "matchIdleHint": "今日のチームをまだ探していません",
+    "matchIdleHint": "今回のミッションチームはまだいません",
     "matchMatchingHint": "近い時間帯の別国のチームメイトを探しています",
     "matchMatchedHint": "今日のグローバルチームの準備ができました",
     "matchFailedHint": "チームが見つかりませんでした。もう一度お試しください",
+    "matchExpiredHint": "今回のライブミッションではマッチしませんでした。",
+    "matchExpiredTitle": "マッチング終了",
+    "matchExpiredBody": "このミッションは終了しました。次のライブミッションをお待ちください。",
+    "matchRetryCooldown": "30秒ほど待ってから再度お試しください。",
     "matchStart": "マッチング開始",
     "matchMatching": "マッチング中…",
     "matchRetry": "再マッチング",
-    "joinMission": "今日のミッションに参加",
-    "joinMissionComplete": "今日のミッション参加済み",
+    "joinMission": "ライブミッションに参加",
+    "joinMissionComplete": "ミッション参加完了",
     "teamPartnerCountry": "チームメイトの国: {{code}}",
     "confirmMatchTitle": "マッチングを開始しますか？",
     "confirmMatchMessage": "別国のフレンドとのマッチングが完了したらお知らせします。",
@@ -86,12 +90,18 @@
     "greeting": "こんにちは、{{nickname}}さん",
     "userFallback": "ユーザー",
     "heroTagline": "グローバルチームミッションで交流を始めましょう",
-    "deadlineBadge": "今日中に提出",
     "missionNoticeTitle": "注意事項",
-    "missionNoticeBody": "同じ質問に、それぞれの国から答えを比較するミッションです。",
+    "missionNoticeBody": "個人情報が見える内容や不快感を与える内容は絶対にアップロードしないでください。",
     "missionSubline1": "別の国のチームメイトと同じ質問に答えるミッションです。",
     "missionSubline2": "マッチングを始めてつながりましょう。",
     "teamFlagsA11y": "マッチしたチームの国"
+  },
+  "mission": {
+    "remainingExpired": "終了",
+    "remainingUnderMinute": "残り 1分未満",
+    "remainingHoursMinutes": "残り {{hours}}時間{{minutes}}分",
+    "remainingMinutesOnly": "残り {{minutes}}分",
+    "categoryFallback": "ミッション"
   },
   "board": {
     "sortLatest": "最新順",
@@ -103,7 +113,10 @@
     "reactions": "リアクション {{count}}"
   },
   "world": {
-    "placeholder": "ワールドの概要は次のステップで接続します。"
+    "placeholder": "ワールドの概要は次のステップで接続します。",
+    "comingSoonTitle": "準備中です",
+    "comingSoonBody": "ワールド画面は近日中に提供予定です。",
+    "comingSoonOk": "OK"
   },
   "my": {
     "placeholder": "プロフィール・マイ結果・保存・設定をまとめて管理します。",
@@ -225,6 +238,8 @@
     "iconTitle": "共通リアクション",
     "expressionTitle": "表現リアクション",
     "expressionPick": "表現を選ぶ",
+    "expressionShowMore": "もっと見る",
+    "expressionShowLess": "閉じる",
     "expressionSheetTitle": "表現を選んでください",
     "noExpressionYet": "まだ表現リアクションはありません",
     "reactionFailed": "リアクションを更新できませんでした",
@@ -244,6 +259,11 @@
     "cannotReactOwnHint": "自分が参加したミッションには表現を残せません。",
     "expressionPickBlockedTitle": "表現を選べません",
     "expressionPickBlockedHint": "自分が参加したミッションには表現を残せません。",
+    "profileModalTitle": "プロフィール",
+    "profileIntroLabel": "自己紹介",
+    "profileIntroEmpty": "自己紹介はまだありません。",
+    "profileModalClose": "閉じる",
+    "profileModalOpenA11y": "{{name}}のプロフィールを見る",
     "submissionLikeA11y": "この写真にいいね",
     "reportA11y": "通報",
     "reportAlertTitle": "通報する",
@@ -258,12 +278,13 @@
       "relatable": "わかる"
     },
     "expression": {
-      "want_to_visit": "行ってみたい",
-      "similar": "うちと似てる",
-      "nice_vibe": "いい雰囲気",
-      "looks_tasty": "おいしそう",
-      "want_to_try": "試してみたい",
-      "relaxing": "のんびりしてる"
+      "mood_nice": "雰囲気がいい",
+      "similar_to_us": "うちに似てる",
+      "surprisingly_different": "思ったより違って驚いた",
+      "fun_side_by_side": "並べて見るともっと楽しい",
+      "best_combo": "この組み合わせ最高",
+      "want_visit": "行ってみたい",
+      "want_taste": "食べてみたい"
     }
   }
 }

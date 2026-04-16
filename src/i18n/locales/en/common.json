@@ -10,7 +10,7 @@
              },
     "nav":  {
                 "notifications":  "Notifications",
-                "resultView":  "Result"
+                "resultView":  "Mission results"
             },
     "auth":  {
                  "loginHeading":  "Log in",
@@ -62,18 +62,22 @@
                 },
     "home":  {
                  "placeholder":  "Home content will be connected next.",
-                 "todayMission":  "Today\u0027s mission",
+                 "todayMission":  "Live mission",
                  "noMission":  "No published mission for today",
                  "noMissionHint":  "Add a published mission row for today\u0027s date in Supabase (see migrations/002).",
-                 "matchIdleHint":  "You haven\u0027t started matching for today yet.",
+                 "matchIdleHint":  "No team yet for this mission.",
                  "matchMatchingHint":  "Finding a teammate in another country in a similar time window.",
                  "matchMatchedHint":  "Your global team for today is ready.",
                  "matchFailedHint":  "We couldn\u0027t find a team. Please try again.",
+                 "matchExpiredHint":  "No match before this live mission ended.",
+                 "matchExpiredTitle":  "Matching closed",
+                 "matchExpiredBody":  "This mission has ended. Please wait for the next live mission.",
+                 "matchRetryCooldown":  "Please try again in a moment (30 seconds).",
                  "matchStart":  "Start matching",
                  "matchMatching":  "Matching\u2026",
                  "matchRetry":  "Try matching again",
-                 "joinMission":  "Join today\u0027s mission",
-                 "joinMissionComplete":  "Today\u0027s mission complete",
+                 "joinMission":  "Join live mission",
+                 "joinMissionComplete":  "Mission complete",
                  "teamPartnerCountry":  "Teammate country: {{code}}",
                  "confirmMatchTitle":  "Start matching?",
                  "confirmMatchMessage":  "We\u0027ll notify you when you\u0027re matched with a friend in another country.",
@@ -86,13 +90,19 @@
                  "greeting":  "Hello, {{nickname}}!",
                  "userFallback":  "User",
                  "heroTagline":  "Start connecting through global team missions",
-                 "deadlineBadge":  "Due by midnight",
                  "missionNoticeTitle":  "Notice",
-                 "missionNoticeBody":  "This mission compares two answers from different countries.",
+                 "missionNoticeBody":  "Do not upload any content that exposes personal information or may cause discomfort.",
                  "missionSubline1":  "A mission where you answer the same question with a teammate from another country.",
                  "missionSubline2":  "Start matching and begin connecting.",
                  "teamFlagsA11y":  "Matched team countries"
              },
+    "mission":  {
+                      "remainingExpired":  "Ended",
+                      "remainingUnderMinute":  "Under 1 min left",
+                      "remainingHoursMinutes":  "{{hours}}h {{minutes}}m left",
+                      "remainingMinutesOnly":  "{{minutes}}m left",
+                      "categoryFallback":  "Mission"
+                  },
     "board":  {
                   "sortLatest":  "Latest",
                   "sortPopular":  "Popular",
@@ -103,7 +113,10 @@
                   "reactions":  "Reactions {{count}}"
               },
     "world":  {
-                  "placeholder":  "World summary will be connected next."
+                  "placeholder":  "World summary will be connected next.",
+                  "comingSoonTitle":  "Coming soon",
+                  "comingSoonBody":  "The World tab will be available in a future update.",
+                  "comingSoonOk":  "OK"
               },
     "my":  {
                "placeholder":  "My page will be connected next.",
@@ -225,6 +238,8 @@
                        "iconTitle":  "Icon reactions",
                        "expressionTitle":  "Expression reactions",
                        "expressionPick":  "Choose expression",
+                       "expressionShowMore":  "Show more",
+                       "expressionShowLess":  "Show less",
                        "expressionSheetTitle":  "Select an expression",
                        "noExpressionYet":  "No expression reactions yet",
                        "reactionFailed":  "Failed to update reaction",
@@ -244,6 +259,11 @@
                        "cannotReactOwnHint":  "You can\u0027t leave an expression on a mission you took part in.",
                        "expressionPickBlockedTitle":  "Can\u0027t pick an expression",
                        "expressionPickBlockedHint":  "You can\u0027t leave an expression on a mission you took part in.",
+                       "profileModalTitle":  "Profile",
+                       "profileIntroLabel":  "About",
+                       "profileIntroEmpty":  "No introduction yet.",
+                       "profileModalClose":  "Close",
+                       "profileModalOpenA11y":  "View {{name}}\u0027s profile",
                        "submissionLikeA11y":  "Like this photo",
                        "reportA11y":  "Report",
                        "reportAlertTitle":  "Report content",
@@ -258,12 +278,13 @@
                                     "relatable":  "Relatable"
                                 },
                        "expression":  {
-                                          "want_to_visit":  "I want to visit",
-                                          "similar":  "Looks similar to us",
-                                          "nice_vibe":  "Great vibe",
-                                          "looks_tasty":  "Looks tasty",
-                                          "want_to_try":  "I want to try this",
-                                          "relaxing":  "Looks relaxing"
+                                          "mood_nice":  "Nice vibe",
+                                          "similar_to_us":  "Similar to us",
+                                          "surprisingly_different":  "More different than I expected — surprised",
+                                          "fun_side_by_side":  "More fun seeing them together",
+                                          "best_combo":  "This pairing is the best",
+                                          "want_visit":  "I want to go there",
+                                          "want_taste":  "I want to try the food"
                                       }
                    },
     "country":  {

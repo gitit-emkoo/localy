@@ -1,7 +1,6 @@
 import React from 'react';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
-import { Image, Pressable, StyleSheet } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import Colors from '@/constants/Colors';
@@ -58,11 +57,11 @@ export default function TabLayout() {
             <Link href="/notifications" asChild>
               <Pressable accessibilityRole="button">
                 {({ pressed }) => (
-                  <FontAwesome
-                    name="bell-o"
-                    size={22}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 16, opacity: pressed ? 0.5 : 1 }}
+                  <Image
+                    source={require('../../assets/bell.png')}
+                    style={[styles.headerBell, { opacity: pressed ? 0.5 : 1 }]}
+                    resizeMode="contain"
+                    accessibilityLabel={t('nav.notifications')}
                   />
                 )}
               </Pressable>
@@ -79,6 +78,14 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="world"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            Alert.alert(t('world.comingSoonTitle'), t('world.comingSoonBody'), [
+              { text: t('world.comingSoonOk'), style: 'default' },
+            ]);
+          },
+        }}
         options={{
           title: t('tabs.world'),
           tabBarIcon: ({ focused }) => <AppTabIcon route="world" focused={focused} />,
@@ -99,5 +106,10 @@ const styles = StyleSheet.create({
   headerLogo: {
     height: 28,
     width: 132,
+  },
+  headerBell: {
+    width: 24,
+    height: 24,
+    marginRight: 16,
   },
 });

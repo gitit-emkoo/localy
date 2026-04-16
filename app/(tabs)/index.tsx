@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +20,10 @@ import { FlagPairRow } from '@/components/ui/FlagPairRow';
 import { Text } from '@/components/Themed';
 import { loadMyProfile } from '@/src/features/profile/loadMyProfile';
 import {
-  fetchMatchRequest,
+  fetchLatestMatchRequest,
   fetchOpenResultCardIdForTeam,
   fetchPartnerProfile,
-  fetchPublishedMissionForLocalToday,
+  fetchActiveMission,
   fetchTeam,
   getMyProfileId,
   matchRequestStatusToMatchState,
@@ -37,6 +36,7 @@ import {
 import type { MatchState } from '@/src/types/domain';
 import { useAuthStore } from '@/src/stores/useAuthStore';
 import { loadBoardCards, type BoardCardItem } from '@/src/features/board/loadBoardCards';
+import { useMissionRemainingLabel } from '@/src/hooks/useMissionRemainingLabel';
 
 const HOME_BOARD_PREVIEW_LIMIT = 6;
 
@@ -84,7 +84,7 @@ export default function HomeScreen() {
       const my = await loadMyProfile();
       setMyNickname(my.data?.profile.nickname ?? '');
 
-      const missionRes = await fetchPublishedMissionForLocalToday();
+      const missionRes = await fetchActiveMission();
       if (missionRes.error) {
         setMission(null);
         setMatchRequest(null);
@@ -104,7 +104,7 @@ export default function HomeScreen() {
         return;
       }
 
-      const mrRes = await fetchMatchRequest(pid, m.id);
+      const mrRes = await fetchLatestMatchRequest(pid, m.id);
       if (mrRes.error) {
         setMatchRequest(null);
         setTeam(null);
@@ -161,6 +161,11 @@ export default function HomeScreen() {
   }
 
   const matchState: MatchState = matchRequestStatusToMatchState(matchRequest?.status);
+  const missionRemainingLabel = useMissionRemainingLabel(mission?.valid_to);
+  const missionCategoryLabelKey = toInterestLabelKey(mission?.category_key);
+  const missionCategoryLabel = missionCategoryLabelKey
+    ? t(`profile.interest.${missionCategoryLabelKey}` as any)
+    : t('mission.categoryFallback');
 
   function confirmStartMatch() {
     Alert.alert(t('home.confirmMatchTitle'), t('home.confirmMatchMessage'), [
@@ -184,8 +189,17 @@ export default function HomeScreen() {
     });
     setMatchActionLoading(false);
     if (res.error) {
-      if (String(res.error.message) === 'already_matched') {
+      const msg = String(res.error.message);
+      if (msg === 'already_matched') {
         await load();
+        return;
+      }
+      if (msg === 'match_retry_cooldown') {
+        Alert.alert(t('home.matchRetryCooldown'));
+        return;
+      }
+      if (msg === 'match_expired') {
+        Alert.alert(t('home.matchExpiredTitle'), t('home.matchExpiredBody'));
         return;
       }
       setErrorText(t('home.loadError'));
@@ -244,6 +258,10 @@ export default function HomeScreen() {
       );
     }
 
+    if (matchState === 'expired') {
+      return null;
+    }
+
     return null;
   }
 
@@ -252,6 +270,7 @@ export default function HomeScreen() {
     if (matchState === 'idle') return t('home.matchIdleHint');
     if (matchState === 'matching') return t('home.matchMatchingHint');
     if (matchState === 'matched') return t('home.matchMatchedHint');
+    if (matchState === 'expired') return t('home.matchExpiredHint');
     return t('home.matchFailedHint');
   }
 
@@ -275,37 +294,35 @@ export default function HomeScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <LinearGradient
-        colors={['#FFEB99', '#F9C846', '#E8A820']}
-        locations={[0, 0.45, 1]}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
-        style={styles.hero}>
-        <Text style={styles.heroGreeting}>
-          {t('home.greeting', { nickname: myNickname || t('home.userFallback') })}
-        </Text>
-        <Text style={styles.heroTagline}>{t('home.heroTagline')}</Text>
-      </LinearGradient>
-
-      {!mission ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t('home.noMission')}</Text>
-          <Text style={styles.muted}>{t('home.noMissionHint')}</Text>
+      <View style={styles.homeTopDark}>
+        <View style={styles.hero}>
+          <Text style={styles.heroGreeting}>
+            {t('home.greeting', { nickname: myNickname || t('home.userFallback') })}
+          </Text>
+          <Text style={styles.heroTagline}>{t('home.heroTagline')}</Text>
         </View>
-      ) : (
-        <View style={[styles.card, styles.missionCard]}>
+
+        {!mission ? (
+          <View style={[styles.card, styles.cardOnDark]}>
+            <Text style={styles.cardTitleOnDark}>{t('home.noMission')}</Text>
+            <Text style={styles.mutedOnDark}>{t('home.noMissionHint')}</Text>
+          </View>
+        ) : (
+          <View style={[styles.card, styles.missionCard]}>
           <View style={styles.missionEyebrowPill}>
             <Text style={styles.missionEyebrowText}>{t('home.todayMission')}</Text>
           </View>
           <View style={styles.badgeRow}>
             <View style={styles.missionBadge}>
               <Text style={styles.missionBadgeText}>
-                {t(`profile.interest.${toInterestLabelKey(mission.category_key)}` as any)}
+                {missionCategoryLabel}
               </Text>
             </View>
-            <View style={styles.missionBadgeMuted}>
-              <Text style={styles.missionBadgeMutedText}>{t('home.deadlineBadge')}</Text>
-            </View>
+            {missionRemainingLabel ? (
+              <View style={styles.missionBadgeMuted}>
+                <Text style={styles.missionBadgeMutedText}>{missionRemainingLabel}</Text>
+              </View>
+            ) : null}
             <Pressable onPress={() => Alert.alert(t('home.missionNoticeTitle'), t('home.missionNoticeBody'))}>
               <FontAwesome name="info-circle" size={18} color="rgba(255,255,255,0.65)" />
             </Pressable>
@@ -333,9 +350,10 @@ export default function HomeScreen() {
 
           {primaryButton()}
         </View>
-      )}
+        )}
 
-      {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
+        {errorText ? <Text style={styles.errorOnDark}>{errorText}</Text> : null}
+      </View>
 
       <View style={styles.cardMuted}>
         <View style={styles.boardBlockInset}>
@@ -417,26 +435,34 @@ const styles = StyleSheet.create({
     gap: 16,
     backgroundColor: '#fff',
   },
+  homeTopDark: {
+    marginHorizontal: -20,
+    marginTop: -20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 4,
+    backgroundColor: '#000',
+    gap: 16,
+  },
   appTitle: {
     fontSize: 26,
     fontWeight: '900',
   },
   hero: {
-    borderRadius: 18,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    gap: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    gap: 4,
   },
   heroGreeting: {
     fontSize: 16,
     fontWeight: '700',
     lineHeight: 22,
-    color: 'rgba(55, 40, 20, 0.92)',
+    color: 'rgba(255,255,255,0.95)',
   },
   heroTagline: {
     fontSize: 16,
     lineHeight: 22,
-    color: '#3D2914',
+    color: 'rgba(255,255,255,0.78)',
     fontWeight: '700',
   },
   missionSubWrap: {
@@ -449,6 +475,20 @@ const styles = StyleSheet.create({
     gap: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
+  },
+  cardOnDark: {
+    backgroundColor: '#1A1A1A',
+    borderColor: '#333333',
+  },
+  cardTitleOnDark: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#fff',
+  },
+  mutedOnDark: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: 'rgba(255,255,255,0.65)',
   },
   missionCard: {
     backgroundColor: '#141414',
@@ -573,7 +613,7 @@ const styles = StyleSheet.create({
   boardMore: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#2F6BFF',
+    color: MISSION_ACCENT,
   },
   boardPreviewErr: {
     fontSize: 12,
@@ -645,11 +685,26 @@ const styles = StyleSheet.create({
     color: '#D92D20',
     fontSize: 13,
   },
+  errorOnDark: {
+    color: '#FCA5A5',
+    fontSize: 13,
+  },
 });
 
-function toInterestLabelKey(categoryKey: string): string {
+function toInterestLabelKey(categoryKey: string | null | undefined): string | null {
+  if (!categoryKey) return null;
   if (categoryKey === 'daily_life') return 'dailyLife';
   if (categoryKey === 'daily_spending') return 'dailySpending';
-  if (categoryKey === 'fashion') return 'fashion';
-  return categoryKey;
+  if (
+    categoryKey === 'food' ||
+    categoryKey === 'place' ||
+    categoryKey === 'emotion' ||
+    categoryKey === 'study' ||
+    categoryKey === 'fashion' ||
+    categoryKey === 'dailyLife' ||
+    categoryKey === 'dailySpending'
+  ) {
+    return categoryKey;
+  }
+  return null;
 }

@@ -1,4 +1,5 @@
 import { supabase } from '@/src/lib/supabase/client';
+import { countryCodeToEnglishName } from '@/src/lib/countryFlag';
 
 export type ResultCardDetail = {
   id: string;
@@ -14,6 +15,8 @@ export type ResultCardDetail = {
     countryName: string;
     age: number | null;
     shortBio: string;
+    /** 프로필 소개(선택), 빈 문자열 가능 */
+    intro: string;
     photoUrl: string;
     captionOriginal: string;
     likeCount: number;
@@ -27,6 +30,8 @@ export type ResultCardDetail = {
     countryName: string;
     age: number | null;
     shortBio: string;
+    /** 프로필 소개(선택), 빈 문자열 가능 */
+    intro: string;
     photoUrl: string;
     captionOriginal: string;
     likeCount: number;
@@ -41,10 +46,19 @@ export type ResultCardDetail = {
   };
 };
 
+/** Invalidates when auth user changes; avoids repeated profile fetches per interaction. */
+let cachedProfile: { authUserId: string; profileId: string } | null = null;
+
 export async function getMyProfileId() {
   const { data: auth } = await supabase.auth.getUser();
   const authUserId = auth.user?.id;
-  if (!authUserId) return null;
+  if (!authUserId) {
+    cachedProfile = null;
+    return null;
+  }
+  if (cachedProfile?.authUserId === authUserId) {
+    return cachedProfile.profileId;
+  }
 
   const meRes = await supabase
     .from('user_profiles')
@@ -52,7 +66,9 @@ export async function getMyProfileId() {
     .eq('auth_user_id', authUserId)
     .maybeSingle();
   if (meRes.error || !meRes.data) return null;
-  return String(meRes.data.id);
+  const profileId = String(meRes.data.id);
+  cachedProfile = { authUserId, profileId };
+  return profileId;
 }
 
 async function toSignedUrl(path: string): Promise<string> {
@@ -108,7 +124,7 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
 
   const profileRes = await supabase
     .from('user_profiles')
-    .select('id, nickname, country_code, country_name, age, short_bio')
+    .select('id, nickname, country_code, country_name, age, short_bio, intro')
     .in('id', [sA.user_id, sB.user_id]);
   if (profileRes.error || !profileRes.data || profileRes.data.length < 2) {
     return { data: null, error: new Error(profileRes.error?.message ?? 'profiles_not_found') };
@@ -187,9 +203,10 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
         userId: String(pA.id),
         nickname: String(pA.nickname),
         countryCode: String(pA.country_code),
-        countryName: String(pA.country_name),
+        countryName: countryCodeToEnglishName(String(pA.country_code)),
         age: typeof pA.age === 'number' ? pA.age : null,
         shortBio: String(pA.short_bio),
+        intro: pA.intro != null && String(pA.intro).trim() !== '' ? String(pA.intro) : '',
         photoUrl: photoA,
         captionOriginal: String(sA.caption_original),
         likeCount: likeCountA,
@@ -200,9 +217,10 @@ export async function fetchResultCardDetail(resultCardId: string): Promise<{ dat
         userId: String(pB.id),
         nickname: String(pB.nickname),
         countryCode: String(pB.country_code),
-        countryName: String(pB.country_name),
+        countryName: countryCodeToEnglishName(String(pB.country_code)),
         age: typeof pB.age === 'number' ? pB.age : null,
         shortBio: String(pB.short_bio),
+        intro: pB.intro != null && String(pB.intro).trim() !== '' ? String(pB.intro) : '',
         photoUrl: photoB,
         captionOriginal: String(sB.caption_original),
         likeCount: likeCountB,

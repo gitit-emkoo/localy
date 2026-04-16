@@ -2,7 +2,7 @@
  * 기획 문서와 동일한 이름의 상태·도메인 타입 (임의 확장 금지)
  */
 
-export type MatchState = 'idle' | 'matching' | 'matched' | 'match_failed';
+export type MatchState = 'idle' | 'matching' | 'matched' | 'match_failed' | 'expired';
 
 export type TeamMissionState =
   | 'not_started'

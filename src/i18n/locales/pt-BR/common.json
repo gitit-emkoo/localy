@@ -1,7 +1,7 @@
 {
   "app": { "name": "Localy" },
   "tabs": { "home": "Home", "board": "Board", "world": "World", "my": "My" },
-  "nav": { "notifications": "Notificacoes", "resultView": "Resultado" },
+  "nav": { "notifications": "Notificacoes", "resultView": "Resultados da missão" },
   "country": { "KR": "Coreia", "JP": "Japao", "VN": "Vietna", "PH": "Filipinas", "TW": "Taiwan", "ID": "Indonesia", "BR": "Brasil", "MX": "Mexico" },
   "profile": {
     "interests": "Interesses",
@@ -17,18 +17,22 @@
     }
   },
   "home": {
-    "todayMission": "Missao de hoje",
+    "todayMission": "Missao ao vivo",
     "noMission": "Nao ha missao publicada para hoje",
     "noMissionHint": "Adicione uma missao published com a data de hoje no Supabase (veja migrations/002).",
-    "matchIdleHint": "Voce ainda nao comecou o match de hoje",
+    "matchIdleHint": "Ainda nao ha time para esta missao.",
     "matchMatchingHint": "Procurando um parceiro de outro pais em um horario parecido",
     "matchMatchedHint": "Seu time global de hoje esta pronto",
     "matchFailedHint": "Nao encontramos um time. Tente novamente",
+    "matchExpiredHint": "Nao houve match antes do fim desta missao ao vivo.",
+    "matchExpiredTitle": "Match encerrado",
+    "matchExpiredBody": "Esta missao ja terminou. Aguarde a proxima missao ao vivo.",
+    "matchRetryCooldown": "Tente novamente em instantes (30 segundos).",
     "matchStart": "Iniciar match",
     "matchMatching": "Matching…",
     "matchRetry": "Tentar de novo",
-    "joinMission": "Entrar na missao de hoje",
-    "joinMissionComplete": "Missao de hoje concluida",
+    "joinMission": "Entrar na missao ao vivo",
+    "joinMissionComplete": "Missao concluida",
     "teamPartnerCountry": "Pais do parceiro: {{code}}",
     "confirmMatchTitle": "Iniciar matching?",
     "confirmMatchMessage": "Avisamos quando o match com alguem de outro pais for concluido.",
@@ -39,6 +43,13 @@
     "boardMore": "Ver tudo",
     "loadError": "Falha ao carregar. Puxe para atualizar",
     "teamFlagsA11y": "Paises do time combinado"
+  },
+  "mission": {
+    "remainingExpired": "Encerrada",
+    "remainingUnderMinute": "Menos de 1 min",
+    "remainingHoursMinutes": "Faltam {{hours}}h {{minutes}}m",
+    "remainingMinutesOnly": "Faltam {{minutes}} min",
+    "categoryFallback": "Missao"
   },
   "board": {
     "sortLatest": "Mais recentes",
@@ -101,5 +112,10 @@
     "statusWaitingBody": "Foto e legenda curta ainda nao enviadas.",
     "statusDoneBodyPeer": "Seu parceiro ja concluiu o envio.",
     "statusWaitingBodyPeer": "Aguardando o envio do parceiro."
+  },
+  "world": {
+    "comingSoonTitle": "Em breve",
+    "comingSoonBody": "A aba Mundo estara disponivel em uma atualizacao futura.",
+    "comingSoonOk": "OK"
   }
 }

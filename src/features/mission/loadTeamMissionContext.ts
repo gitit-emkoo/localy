@@ -1,6 +1,6 @@
 import {
-  fetchMatchRequest,
-  fetchPublishedMissionForLocalToday,
+  fetchActiveMatchRequest,
+  fetchActiveMission,
   fetchTeam,
   getMyProfileId,
   type MatchRequestRow,
@@ -57,13 +57,13 @@ export async function loadTeamMissionContext(): Promise<TeamMissionContext> {
     return { ok: false, reason: 'no_profile' };
   }
 
-  const mRes = await fetchPublishedMissionForLocalToday();
+  const mRes = await fetchActiveMission();
   if (mRes.error || !mRes.data) {
     return { ok: false, reason: 'no_mission' };
   }
 
   const mission = mRes.data as MissionRow;
-  const mrRes = await fetchMatchRequest(myProfileId, mission.id);
+  const mrRes = await fetchActiveMatchRequest(myProfileId, mission.id);
   if (mrRes.error) {
     return { ok: false, reason: 'no_team', message: mrRes.error.message };
   }

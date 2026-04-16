@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   Linking,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -18,7 +19,12 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/Button';
 import { Text, View } from '@/components/Themed';
-import { getExpressionOptions } from '@/src/constants/resultCardExpressions';
+import { getExpressionOptions, getVisibleExpressionOptions } from '@/src/constants/resultCardExpressions';
+import {
+  applyOptimisticExpression,
+  applyOptimisticSaved,
+  applyOptimisticSubmissionLike,
+} from '@/src/features/resultCard/applyOptimisticPatches';
 import {
   fetchResultCardDetail,
   setExpressionReaction,
@@ -28,7 +34,7 @@ import {
 } from '@/src/features/resultCard/resultCard';
 import { countryCodeToFlag } from '@/src/lib/countryFlag';
 
-/** ? ?? ??? ??(`team-mission.tsx`)? ??? ?? ??? */
+/** ? ?? ?? ??? ?? ??? (`team-mission.tsx`) */
 const PANEL_BORDER = '#000';
 
 /**
@@ -44,11 +50,15 @@ export default function ResultCardDetailScreen() {
 
   const [likeLoadingId, setLikeLoadingId] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
-  const [exprOpen, setExprOpen] = useState(false);
-  const [exprDraft, setExprDraft] = useState<string | null>(null);
+  const [exprListExpanded, setExprListExpanded] = useState(false);
   const [exprSubmitting, setExprSubmitting] = useState(false);
+  const [profileModal, setProfileModal] = useState<null | 'a' | 'b'>(null);
 
   const cardId = String(id ?? '');
+
+  useEffect(() => {
+    setExprListExpanded(false);
+  }, [cardId]);
 
   const load = useCallback(async () => {
     if (!cardId) {
@@ -67,7 +77,6 @@ export default function ResultCardDetailScreen() {
     }
 
     setDetail(res.data);
-    setExprDraft(res.data.viewerState.myExpressionReaction);
     setErrorText(null);
     setLoading(false);
   }, [cardId, t]);
@@ -99,6 +108,11 @@ export default function ResultCardDetailScreen() {
     return m;
   }, [detail]);
 
+  const visibleExpressionOptions = useMemo(
+    () => getVisibleExpressionOptions(expressionOptions, expressionCountMap, exprListExpanded),
+    [expressionOptions, expressionCountMap, exprListExpanded],
+  );
+
   const stackScreenOptions = useMemo(
     () => ({ title: t('nav.resultView'), contentStyle: { backgroundColor: '#fff' as const } }),
     [t],
@@ -106,22 +120,27 @@ export default function ResultCardDetailScreen() {
 
   async function onTogglePhotoLike(submissionId: string) {
     if (!detail || likeLoadingId) return;
+    const snapshot = detail;
+    setDetail(applyOptimisticSubmissionLike(detail, submissionId));
     setLikeLoadingId(submissionId);
     const res = await toggleSubmissionLike(submissionId);
     setLikeLoadingId(null);
     if (res.error) {
+      setDetail(snapshot);
       Alert.alert(t('resultCard.reactionFailed'), res.error.message);
-      return;
     }
-    await load();
   }
 
   async function onToggleSave() {
     if (!detail || saveLoading) return;
+    const snapshot = detail;
+    const nextSaved = !detail.viewerState.isSaved;
+    setDetail(applyOptimisticSaved(detail, nextSaved));
     setSaveLoading(true);
     const res = await toggleSavedCard(detail.id);
     setSaveLoading(false);
     if (res.error) {
+      setDetail(snapshot);
       if (String(res.error.message) === 'own_result_card') {
         Alert.alert('', t('resultCard.cannotSaveOwnHint'));
       } else {
@@ -129,39 +148,41 @@ export default function ResultCardDetailScreen() {
       }
       return;
     }
-    Alert.alert(res.saved ? t('resultCard.saved') : t('resultCard.unsaved'));
-    await load();
+    if (typeof res.saved === 'boolean' && res.saved !== nextSaved) {
+      setDetail((d) => (d ? applyOptimisticSaved(d, res.saved) : d));
+    }
   }
 
-  async function onConfirmExpression() {
-    if (!detail || !exprDraft) {
-      setExprOpen(false);
+  async function onPickExpression(expressionKey: string) {
+    if (!detail || exprSubmitting) return;
+    if (detail.viewerState.isOwnResultCard) {
+      Alert.alert(t('resultCard.expressionPickBlockedTitle'), t('resultCard.expressionPickBlockedHint'));
       return;
     }
-    const chosen = expressionOptions.find((x) => x.key === exprDraft);
-    if (!chosen) {
-      setExprOpen(false);
-      return;
-    }
+    const chosen = expressionOptions.find((x) => x.key === expressionKey);
+    if (!chosen) return;
 
+    const snapshot = detail;
+    const expressionText = t(chosen.textKey);
+    setDetail(applyOptimisticExpression(detail, chosen.key, expressionText));
     setExprSubmitting(true);
-    const res = await setExpressionReaction({
-      resultCardId: detail.id,
-      expressionKey: chosen.key,
-      expressionText: t(chosen.textKey),
-    });
-    setExprSubmitting(false);
-    if (res.error) {
-      if (String(res.error.message) === 'own_result_card') {
-        Alert.alert(t('resultCard.cannotReactOwnTitle'), t('resultCard.cannotReactOwnHint'));
-      } else {
-        Alert.alert(t('resultCard.expressionFailed'), res.error.message);
+    try {
+      const res = await setExpressionReaction({
+        resultCardId: detail.id,
+        expressionKey: chosen.key,
+        expressionText,
+      });
+      if (res.error) {
+        setDetail(snapshot);
+        if (String(res.error.message) === 'own_result_card') {
+          Alert.alert(t('resultCard.cannotReactOwnTitle'), t('resultCard.cannotReactOwnHint'));
+        } else {
+          Alert.alert(t('resultCard.expressionFailed'), res.error.message);
+        }
       }
-      return;
+    } finally {
+      setExprSubmitting(false);
     }
-    setExprOpen(false);
-    Alert.alert(t('resultCard.expressionSaved'));
-    await load();
   }
 
   async function onShare() {
@@ -277,6 +298,7 @@ export default function ResultCardDetailScreen() {
             likeCount={detail.itemA.likeCount}
             myLike={detail.itemA.myLike}
             likeBusy={likeLoadingId === detail.itemA.submissionId}
+            onOpenProfile={() => setProfileModal('a')}
             onToggleLike={() => void onTogglePhotoLike(detail.itemA.submissionId)}
           />
         </View>
@@ -293,6 +315,7 @@ export default function ResultCardDetailScreen() {
             likeCount={detail.itemB.likeCount}
             myLike={detail.itemB.myLike}
             likeBusy={likeLoadingId === detail.itemB.submissionId}
+            onOpenProfile={() => setProfileModal('b')}
             onToggleLike={() => void onTogglePhotoLike(detail.itemB.submissionId)}
           />
         </View>
@@ -301,24 +324,41 @@ export default function ResultCardDetailScreen() {
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>{t('resultCard.expressionTitle')}</Text>
             <Pressable
-              onPress={() => {
-                if (detail.viewerState.isOwnResultCard) {
-                  Alert.alert(t('resultCard.expressionPickBlockedTitle'), t('resultCard.expressionPickBlockedHint'));
-                  return;
-                }
-                setExprOpen(true);
-              }}
-              style={styles.exprPickBtn}>
-              <Text style={styles.exprPickBtnText}>{t('resultCard.expressionPick')}</Text>
+              onPress={() => setExprListExpanded((v) => !v)}
+              style={styles.exprPickBtn}
+              accessibilityRole="button"
+              accessibilityLabel={
+                exprListExpanded ? t('resultCard.expressionShowLess') : t('resultCard.expressionShowMore')
+              }>
+              <Text style={styles.exprPickBtnText}>
+                {exprListExpanded ? t('resultCard.expressionShowLess') : t('resultCard.expressionShowMore')}
+              </Text>
             </Pressable>
           </View>
           <View style={styles.exprSummaryWrap}>
-            {expressionOptions.map((opt) => (
-              <View key={opt.key} style={styles.exprRow}>
-                <Text style={styles.exprSummary}>{t(opt.textKey)}</Text>
-                <Text style={styles.exprCount}>{expressionCountMap.get(opt.key) ?? 0}</Text>
-              </View>
-            ))}
+            {visibleExpressionOptions.map((opt) => {
+              const count = expressionCountMap.get(opt.key) ?? 0;
+              const mine = detail.viewerState.myExpressionReaction === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  disabled={exprSubmitting}
+                  onPress={() => void onPickExpression(opt.key)}
+                  style={({ pressed }) => [
+                    styles.exprRow,
+                    mine ? styles.exprRowMine : null,
+                    pressed ? styles.exprRowPressed : null,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${opt.emoji} ${t(opt.textKey)}  ${count}`}>
+                  <View lightColor="transparent" darkColor="transparent" style={styles.exprRowMain}>
+                    <Text style={styles.exprEmoji}>{opt.emoji}</Text>
+                    <Text style={styles.exprSummary}>{t(opt.textKey)}</Text>
+                  </View>
+                  <Text style={styles.exprCount}>{count}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -333,32 +373,59 @@ export default function ResultCardDetailScreen() {
       </ScrollView>
 
       <Modal
-        visible={exprOpen}
+        visible={profileModal !== null}
         transparent
-        animationType="slide"
-        onRequestClose={() => setExprOpen(false)}>
-        <View style={styles.sheetBackdrop}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{t('resultCard.expressionSheetTitle')}</Text>
-            {expressionOptions.map((o) => {
-              const selected = exprDraft === o.key;
-              return (
-                <Pressable
-                  key={o.key}
-                  onPress={() => setExprDraft(o.key)}
-                  style={[styles.sheetItem, selected ? styles.sheetItemSelected : null]}>
-                  <Text style={styles.sheetItemText}>{t(o.textKey)}</Text>
-                </Pressable>
-              );
-            })}
-            <View style={styles.sheetBtns}>
-              <Button label={t('resultCard.cancel')} variant="secondary" onPress={() => setExprOpen(false)} />
-              <Button
-                label={t('resultCard.confirm')}
-                onPress={() => void onConfirmExpression()}
-                loading={exprSubmitting}
-                disabled={!exprDraft}
-              />
+        animationType="fade"
+        presentationStyle={Platform.OS === 'ios' ? 'overFullScreen' : undefined}
+        onRequestClose={() => setProfileModal(null)}>
+        <View style={styles.profileModalWrap}>
+          <Pressable
+            style={styles.profileModalBackdropPress}
+            onPress={() => setProfileModal(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t('resultCard.profileModalClose')}
+          />
+          <View style={styles.profileModalCentered} pointerEvents="box-none">
+            <View style={styles.profileModalCard}>
+              {profileModal && detail ? (
+                <>
+                  <ScrollView
+                    style={styles.profileModalScroll}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}>
+                    {(() => {
+                      const peer = profileModal === 'a' ? detail.itemA : detail.itemB;
+                      const introTrim = peer.intro.trim();
+                      return (
+                        <>
+                          <Text style={styles.profileModalName}>{peer.nickname}</Text>
+                          <Text style={styles.profileModalMetaLine}>
+                            {countryCodeToFlag(peer.countryCode)} ({peer.countryCode})
+                            {' \u00b7 '}
+                            {peer.countryName}
+                          </Text>
+                          <Text style={styles.profileModalRow}>
+                            {t('profile.ageLabel', {
+                              age: peer.age != null ? String(peer.age) : '\u2014',
+                            })}
+                          </Text>
+                          <Text style={styles.profileModalLabel}>{t('profile.shortBio')}</Text>
+                          <Text style={styles.profileModalBody}>{peer.shortBio}</Text>
+                          <Text style={styles.profileModalLabel}>{t('resultCard.profileIntroLabel')}</Text>
+                          <Text style={styles.profileModalBody}>
+                            {introTrim ? peer.intro : t('resultCard.profileIntroEmpty')}
+                          </Text>
+                        </>
+                      );
+                    })()}
+                  </ScrollView>
+                  <Button
+                    label={t('resultCard.profileModalClose')}
+                    variant="secondary"
+                    onPress={() => setProfileModal(null)}
+                  />
+                </>
+              ) : null}
             </View>
           </View>
         </View>
@@ -378,6 +445,7 @@ function ResultItemCard(props: {
   likeCount: number;
   myLike: boolean;
   likeBusy: boolean;
+  onOpenProfile: () => void;
   onToggleLike: () => void;
 }) {
   const { t } = useTranslation();
@@ -385,20 +453,27 @@ function ResultItemCard(props: {
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeadRow}>
-        <View style={styles.cardIdentityRow}>
-          <Text style={styles.flagText}>{flag}</Text>
-          <Text style={styles.countryCodeInline}>({props.countryCode})</Text>
-          <Text style={styles.cardTitle}>{props.nickname}</Text>
+      <Pressable
+        onPress={props.onOpenProfile}
+        accessibilityRole="button"
+        accessibilityLabel={t('resultCard.profileModalOpenA11y', { name: props.nickname })}
+        style={({ pressed }) => [styles.profileTapZone, pressed ? styles.profileTapPressed : null]}>
+        <View style={styles.cardHeadRow}>
+          <View style={styles.cardIdentityRow}>
+            <Text style={styles.flagText}>{flag}</Text>
+            <Text style={styles.countryCodeInline}>({props.countryCode})</Text>
+            <Text style={styles.cardTitle}>{props.nickname}</Text>
+          </View>
+          <View style={styles.countryBadge}>
+            <Text style={styles.countryBadgeText}>{props.countryName}</Text>
+          </View>
         </View>
-        <View style={styles.countryBadge}>
-          <Text style={styles.countryBadgeText}>{props.countryName}</Text>
-        </View>
-      </View>
-      <View style={styles.metaLikeRow}>
-        <Text style={styles.cardMetaFlex} numberOfLines={2}>
+        <Text style={styles.profileMetaUnderHeader} numberOfLines={2}>
           {props.age ? `${props.age}` : '-'} / {props.shortBio}
         </Text>
+      </Pressable>
+      <View style={styles.metaLikeRow}>
+        <View style={styles.metaLikeSpacer} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('resultCard.submissionLikeA11y')}
@@ -621,7 +696,27 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#fff',
   },
+  exprRowMine: {
+    borderColor: '#2F6BFF',
+    backgroundColor: '#EEF2FF',
+  },
+  exprRowPressed: {
+    opacity: 0.88,
+  },
+  exprRowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
+    paddingRight: 8,
+  },
+  exprEmoji: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
   exprSummary: {
+    flex: 1,
     fontSize: 13,
     opacity: 0.85,
   },
@@ -630,38 +725,77 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#2F6BFF',
   },
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-end',
+  profileTapZone: {
+    borderRadius: 12,
   },
-  sheet: {
+  profileTapPressed: {
+    opacity: 0.92,
+  },
+  profileMetaUnderHeader: {
+    fontSize: 13,
+    opacity: 0.75,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  metaLikeSpacer: {
+    flex: 1,
+  },
+  profileModalWrap: {
+    flex: 1,
+  },
+  profileModalBackdropPress: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.38)',
+  },
+  profileModalCentered: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 40,
+  },
+  profileModalCard: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderRadius: 16,
     padding: 16,
     gap: 10,
+    width: '88%',
+    maxWidth: 320,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.1)',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
   },
-  sheetTitle: {
-    fontSize: 16,
+  profileModalScroll: {
+    maxHeight: 240,
+  },
+  profileModalName: {
+    fontSize: 20,
     fontWeight: '800',
+    marginBottom: 8,
   },
-  sheetItem: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: PANEL_BORDER,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  sheetItemSelected: {
-    borderColor: '#2F6BFF',
-    backgroundColor: '#EEF2FF',
-  },
-  sheetItemText: {
+  profileModalMetaLine: {
     fontSize: 14,
+    opacity: 0.85,
+    marginBottom: 6,
   },
-  sheetBtns: {
-    flexDirection: 'row',
-    gap: 8,
+  profileModalRow: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  profileModalLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    opacity: 0.55,
+    marginBottom: 4,
+    marginTop: 4,
+  },
+  profileModalBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 4,
   },
 });

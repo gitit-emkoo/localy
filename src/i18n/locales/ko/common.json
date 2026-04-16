@@ -1,7 +1,7 @@
 ﻿{
   "app": { "name": "Localy" },
   "tabs": { "home": "Home", "board": "Board", "world": "World", "my": "My" },
-  "nav": { "notifications": "알림", "resultView": "결과 보기" },
+  "nav": { "notifications": "알림", "resultView": "미션 결과" },
   "auth": {
     "loginHeading": "로그인",
     "signupHeading": "회원가입",
@@ -52,18 +52,22 @@
   },
   "home": {
     "placeholder": "오늘의 미션 · 매칭 · Board 미리보기 영역은 다음 단계에서 연결합니다.",
-    "todayMission": "오늘의 미션",
+    "todayMission": "라이브 미션",
     "noMission": "오늘 게시된 미션이 없어요",
     "noMissionHint": "Supabase SQL에서 오늘 날짜(mission_date)로 published 미션 행을 추가했는지 확인해 주세요. (migrations/002 참고)",
-    "matchIdleHint": "오늘의 팀을 아직 찾지 않았어요",
+    "matchIdleHint": "이번 미션 팀이 아직 없습니다",
     "matchMatchingHint": "비슷한 시간대의 다른 국가 팀원을 찾고 있어요",
-    "matchMatchedHint": "오늘의 글로벌 팀이 준비되었어요",
+    "matchMatchedHint": "이번 미션의 글로벌 팀이 준비되었어요",
     "matchFailedHint": "팀을 찾지 못했어요. 다시 시도해 주세요",
+    "matchExpiredHint": "이번 라이브 미션에서 매칭되지 않았어요.",
+    "matchExpiredTitle": "매칭 종료",
+    "matchExpiredBody": "이번 미션은 이미 종료되었어요. 다음 라이브 미션을 기다려 주세요.",
+    "matchRetryCooldown": "잠시 후 다시 시도해 주세요. (30초)",
     "matchStart": "매칭 시작",
     "matchMatching": "매칭 중…",
     "matchRetry": "다시 매칭하기",
-    "joinMission": "오늘의 미션 참여",
-    "joinMissionComplete": "오늘의 미션 참여 완료",
+    "joinMission": "라이브 미션 참여",
+    "joinMissionComplete": "미션 참여 완료",
     "teamPartnerCountry": "팀원 국가: {{code}}",
     "confirmMatchTitle": "매칭을 시작할까요?",
     "confirmMatchMessage": "다른 국가 친구와 매칭이 완료되면 알려드려요",
@@ -76,12 +80,18 @@
     "greeting": "안녕하세요 {{nickname}}님",
     "userFallback": "사용자",
     "heroTagline": "글로벌 팀 미션으로 소통을 시작해 보세요",
-    "deadlineBadge": "오늘 자정 마감",
     "missionNoticeTitle": "주의사항",
-    "missionNoticeBody": "같은 질문에 대한 두 국가 답변을 비교하는 미션입니다.",
+    "missionNoticeBody": "개인정보가 노출되는 장면 또는 불편함을 주는 장면은 절대로 업로드하지 말아 주세요.",
     "missionSubline1": "다른 국가의 팀원과 같은 질문에 답하는 미션입니다.",
     "missionSubline2": "매칭을 시작하고 소통을 시작하세요",
     "teamFlagsA11y": "매칭된 팀의 두 국가"
+  },
+  "mission": {
+    "remainingExpired": "종료됨",
+    "remainingUnderMinute": "남은 시간 · 1분 미만",
+    "remainingHoursMinutes": "남은 시간 · {{hours}}시간 {{minutes}}분",
+    "remainingMinutesOnly": "남은 시간 · {{minutes}}분",
+    "categoryFallback": "미션"
   },
   "board": {
     "sortLatest": "최신순",
@@ -92,7 +102,12 @@
     "cardMissionFallback": "오늘의 미션",
     "reactions": "반응 {{count}}"
   },
-  "world": { "placeholder": "글로벌 참여 현황 요약 화면입니다." },
+  "world": {
+    "placeholder": "글로벌 참여 현황 요약 화면입니다.",
+    "comingSoonTitle": "준비 중입니다",
+    "comingSoonBody": "월드 화면은 곧 제공할 예정이에요.",
+    "comingSoonOk": "확인"
+  },
   "my": {
     "placeholder": "프로필 · 내 결과 카드 · 저장한 카드 · 설정",
     "title": "마이페이지",
@@ -215,6 +230,8 @@
     "iconTitle": "공통 반응",
     "expressionTitle": "표현 반응",
     "expressionPick": "표현 선택",
+    "expressionShowMore": "더보기",
+    "expressionShowLess": "접기",
     "expressionSheetTitle": "표현을 선택해 주세요",
     "noExpressionYet": "아직 표현 반응이 없어요",
     "reactionFailed": "반응 처리에 실패했어요",
@@ -234,6 +251,11 @@
     "cannotReactOwnHint": "내가 참여한 미션에는 표현을 남길 수 없어요.",
     "expressionPickBlockedTitle": "표현을 선택할 수 없어요",
     "expressionPickBlockedHint": "내가 참여한 미션에는 표현을 남길 수 없어요.",
+    "profileModalTitle": "프로필",
+    "profileIntroLabel": "소개",
+    "profileIntroEmpty": "작성된 소개가 없어요.",
+    "profileModalClose": "닫기",
+    "profileModalOpenA11y": "{{name}} 프로필 보기",
     "submissionLikeA11y": "이 사진에 좋아요",
     "reportA11y": "신고하기",
     "reportAlertTitle": "신고하기",
@@ -248,12 +270,13 @@
       "relatable": "공감돼요"
     },
     "expression": {
-      "want_to_visit": "가보고 싶어요",
-      "similar": "우리랑 비슷하네요",
-      "nice_vibe": "분위기 좋아 보여요",
-      "looks_tasty": "맛있어 보여요",
-      "want_to_try": "먹어보고 싶어요",
-      "relaxing": "편안해 보여요"
+      "mood_nice": "분위기 좋아요",
+      "similar_to_us": "우리랑 비슷해요",
+      "surprisingly_different": "생각보다 달라서 놀랐어요",
+      "fun_side_by_side": "같이 보니까 더 재밌어요",
+      "best_combo": "이 조합이 최고에요",
+      "want_visit": "가보고 싶어요",
+      "want_taste": "먹어보고 싶어요"
     }
   },
   "country": {

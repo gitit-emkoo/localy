@@ -27,6 +27,7 @@ import { computeTeamMissionState } from '@/src/features/mission/teamMissionState
 import { submitMissionPhoto } from '@/src/features/mission/submitMission';
 import type { TeamMissionState } from '@/src/types/domain';
 import { countryCodeToFlag } from '@/src/lib/countryFlag';
+import { useMissionRemainingLabel } from '@/src/hooks/useMissionRemainingLabel';
 
 const CTA_GOLD = '#D4A017';
 const PANEL_BORDER = '#000';
@@ -75,6 +76,10 @@ export default function TeamMissionScreen() {
     if (!ctx?.ok) return false;
     return ctx.submissions.some((s) => s.user_id === ctx.myProfileId);
   }, [ctx]);
+
+  const missionRemainingLabel = useMissionRemainingLabel(
+    ctx !== null && ctx.ok === true ? ctx.mission.valid_to : undefined,
+  );
 
   async function pickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -183,7 +188,10 @@ export default function TeamMissionScreen() {
   const progressRatio = Math.max(0, Math.min(1, progressCount / 2));
   const myDone = ctx.submissions.some((s) => s.user_id === ctx.me.id);
   const peerDone = ctx.submissions.some((s) => s.user_id === ctx.partner.id);
-  const missionCategoryLabel = t(`profile.interest.${toInterestLabelKey(ctx.mission.category_key)}` as any);
+  const missionCategoryLabelKey = toInterestLabelKey(ctx.mission.category_key);
+  const missionCategoryLabel = missionCategoryLabelKey
+    ? t(`profile.interest.${missionCategoryLabelKey}` as any)
+    : t('mission.categoryFallback');
 
   return (
     <>
@@ -202,6 +210,7 @@ export default function TeamMissionScreen() {
             </Pressable>
           </View>
           <Text style={styles.missionTitle}>{ctx.missionTitle}</Text>
+          {missionRemainingLabel ? <Text style={styles.missionRemaining}>{missionRemainingLabel}</Text> : null}
           <View style={styles.guideLines}>
             <Text style={styles.muted}>{t('teamMission.missionGuideLine1')}</Text>
             <Text style={styles.muted}>{t('teamMission.missionGuideLine2')}</Text>
@@ -358,6 +367,11 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     lineHeight: 36,
   },
+  missionRemaining: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '900',
@@ -506,11 +520,22 @@ function MemberStatusRow(props: { title: string; body: string; badgeText: string
   );
 }
 
-function toInterestLabelKey(categoryKey: string): string {
+function toInterestLabelKey(categoryKey: string | null | undefined): string | null {
+  if (!categoryKey) return null;
   if (categoryKey === 'daily_life') return 'dailyLife';
   if (categoryKey === 'daily_spending') return 'dailySpending';
-  if (categoryKey === 'fashion') return 'fashion';
-  return categoryKey;
+  if (
+    categoryKey === 'food' ||
+    categoryKey === 'place' ||
+    categoryKey === 'emotion' ||
+    categoryKey === 'study' ||
+    categoryKey === 'fashion' ||
+    categoryKey === 'dailyLife' ||
+    categoryKey === 'dailySpending'
+  ) {
+    return categoryKey;
+  }
+  return null;
 }
 
 const miniStyles = StyleSheet.create({
