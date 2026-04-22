@@ -1,0 +1,7 @@
+# Edge Functions 설정 (CLI 배포 시 적용)
+# https://supabase.com/docs/guides/functions/function-configuration
+
+[functions.matchmaking-worker]
+# Auth 사용자 JWT가 ES256인 경우 게이트웨이에서 UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM(401)이 날 수 있음.
+# MVP 스텁: 게이트 검증 비활성화. 실제 매칭 로직에서는 요청 헤더의 JWT를 함수 내부에서 검증할 것.
+verify_jwt = false

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "notes": {
+    "day": "UTC 기준 달력 날짜 (YYYY-MM-DD). 이 날 12:00 UTC에 시작하는 24시간 미션으로 import 시 valid_from/valid_to·mission_date에 매핑하면 됨.",
+    "category_key": "앱 홈 배지와 맞출 키. 예: daily_life, food, place, emotion, study, fashion, daily_spending 등 (코드의 category_key와 동일해야 함).",
+    "title": "미션 질문 한 줄 (홈 카드 빨간 제목 영역).",
+    "short_description": "DB NOT NULL용. 화면 미노출이면 모두 동일한 짧은 값으로 통일."
+  },
+  "missions": [
+    {
+      "day": "2026-04-20",
+      "category_key": "daily_life",
+      "title": "오늘 가장 맛있었던 음식을 보여주세요",
+      "short_description": "-"
+    },
+    {
+      "day": "2026-04-21",
+      "category_key": "food",
+      "title": "점심에 실제로 먹은 것을 사진으로 남겨 주세요",
+      "short_description": "-"
+    },
+    {
+      "day": "2026-04-22",
+      "category_key": "daily_life",
+      "title": "오늘 하늘 사진을 한 장 찍어 주세요",
+      "short_description": "-"
+    }
+  ]
+}

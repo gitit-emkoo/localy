@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -37,6 +37,7 @@ import type { MatchState } from '@/src/types/domain';
 import { useAuthStore } from '@/src/stores/useAuthStore';
 import { loadBoardCards, type BoardCardItem } from '@/src/features/board/loadBoardCards';
 import { useMissionRemainingLabel } from '@/src/hooks/useMissionRemainingLabel';
+import { invokeMatchmakingWorker } from '@/src/features/mission/invokeMatchmakingWorker';
 
 const HOME_BOARD_PREVIEW_LIMIT = 6;
 
@@ -72,6 +73,43 @@ export default function HomeScreen() {
 
   const [boardPreview, setBoardPreview] = useState<BoardCardItem[]>([]);
   const [boardPreviewError, setBoardPreviewError] = useState<string | null>(null);
+  const lastWorkerInvokeAtRef = useRef(0);
+
+  const syncMatchOnly = useCallback(
+    async (input: { silent?: boolean } = {}) => {
+      if (!myProfileId || !mission?.id) return;
+
+      const mrRes = await fetchLatestMatchRequest(myProfileId, mission.id);
+      if (mrRes.error) {
+        // 매칭 동기화 폴링에서는 일시적인 네트워크/레이스 에러를 화면 에러로 노출하지 않는다.
+        if (!input.silent) setErrorText(t('home.loadError'));
+        return;
+      }
+
+      const mr = mrRes.data as MatchRequestRow | null;
+      setMatchRequest(mr);
+
+      if (mr?.status === 'matched' && mr.team_id) {
+        const teamRes = await fetchTeam(mr.team_id);
+        const tr = teamRes.data as TeamRow | null;
+        setTeam(tr ?? null);
+        if (tr) {
+          const pr = await fetchPartnerProfile(tr, myProfileId);
+          setPartner(pr.data);
+          const rcId = await fetchOpenResultCardIdForTeam(mr.team_id);
+          setTeamOpenResultCardId(rcId);
+        } else {
+          setPartner(null);
+          setTeamOpenResultCardId(null);
+        }
+      } else {
+        setTeam(null);
+        setPartner(null);
+        setTeamOpenResultCardId(null);
+      }
+    },
+    [myProfileId, mission?.id, t],
+  );
 
   const load = useCallback(async () => {
     setErrorText(null);
@@ -153,6 +191,33 @@ export default function HomeScreen() {
       void load();
     }, [load, authPhase]),
   );
+
+  useEffect(() => {
+    if (matchRequest?.status !== 'matching' || !myProfileId || !mission?.id) return;
+
+    let alive = true;
+    const run = async () => {
+      if (!alive) return;
+      await syncMatchOnly({ silent: true });
+      // Scheduler가 없는 환경에서도 대기 중 요청이 오래 남지 않도록 워커를 주기적으로 재호출한다.
+      const now = Date.now();
+      const shouldInvokeWorker = now - lastWorkerInvokeAtRef.current >= 8000;
+      if (shouldInvokeWorker && matchRequest?.id) {
+        lastWorkerInvokeAtRef.current = now;
+        void invokeMatchmakingWorker({ matchRequestId: matchRequest.id, missionId: mission.id });
+      }
+    };
+
+    void run();
+    const timer = setInterval(() => {
+      void run();
+    }, 2500);
+
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [matchRequest?.id, matchRequest?.status, myProfileId, mission?.id, syncMatchOnly]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -329,8 +394,14 @@ export default function HomeScreen() {
           </View>
           <Text style={styles.missionCardTitle}>{mission.title}</Text>
           <View style={styles.missionSubWrap}>
-            <Text style={styles.missionBody}>{t('home.missionSubline1')}</Text>
-            <Text style={styles.missionBody}>{t('home.missionSubline2')}</Text>
+            {mission.short_description?.trim() ? (
+              <Text style={styles.missionBody}>{mission.short_description}</Text>
+            ) : (
+              <>
+                <Text style={styles.missionBody}>{t('home.missionSubline1')}</Text>
+                <Text style={styles.missionBody}>{t('home.missionSubline2')}</Text>
+              </>
+            )}
           </View>
 
           <View style={styles.missionDivider} />
