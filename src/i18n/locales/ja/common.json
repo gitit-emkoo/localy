@@ -2,6 +2,9 @@
   "app": { "name": "Localy" },
   "tabs": { "home": "ホーム", "board": "ボード", "world": "ワールド", "my": "マイ" },
   "nav": { "notifications": "通知", "resultView": "ミッション結果" },
+  "notifications": {
+    "inboxEmpty": "通知はまだありません。"
+  },
   "auth": {
     "loginHeading": "ログイン",
     "signupHeading": "新規登録",
@@ -24,7 +27,16 @@
     "invalidCredentials": "メールまたはパスワードを確認してください",
     "passwordTooShort": "パスワードは{{min}}文字以上にしてください",
     "passwordSetFailed": "パスワードの設定に失敗しました。もう一度お試しください",
-    "requestFailed": "リクエストに失敗しました。もう一度お試しください"
+    "requestFailed": "リクエストに失敗しました。もう一度お試しください",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "forgotPasswordHint": "登録したメールアドレスを入力すると、再設定コードを送信します。",
+    "sendResetCode": "再設定コードを送る",
+    "backToLogin": "ログインに戻る",
+    "resetCodeTitle": "再設定コード入力",
+    "resetCodeHint": "メールで届いた6桁のコードを入力してください。",
+    "resetPasswordTitle": "新しいパスワード設定",
+    "resetPasswordHint": "新しいパスワードを入力して変更を完了してください。",
+    "resetPasswordSubmit": "パスワードを変更"
   },
   "country": {
     "KR": "韓国",
@@ -191,6 +203,8 @@
     "errNoMission": "今日のミッションが見つかりません。",
     "errNoProfile": "プロフィールが見つかりません。",
     "errNoTeam": "マッチしたチームがありません。ホームでマッチ完了後に再度お試しください。",
+    "errNotInTeam": "このチームミッションを表示する権限がありません。",
+    "errNoMatch": "このチームのマッチ記録が見つかりません。",
     "goBack": "戻る",
     "peerLabel": "チームメイト",
     "progress": "{{done}} / {{total}}",

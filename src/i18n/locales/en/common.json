@@ -12,6 +12,9 @@
                 "notifications":  "Notifications",
                 "resultView":  "Mission results"
             },
+    "notifications":  {
+                          "inboxEmpty":  "No notifications yet."
+                      },
     "auth":  {
                  "loginHeading":  "Log in",
                  "signupHeading":  "Sign up",
@@ -34,7 +37,16 @@
                  "invalidCredentials":  "Check your email or password",
                  "passwordTooShort":  "Password must be at least {{min}} characters",
                  "passwordSetFailed":  "Couldn\u0027t set password. Please try again.",
-                 "requestFailed":  "Request failed. Please try again"
+                 "requestFailed":  "Request failed. Please try again",
+                 "forgotPassword":  "Forgot password?",
+                 "forgotPasswordHint":  "Enter your signup email and we\u0027ll send a reset code.",
+                 "sendResetCode":  "Send reset code",
+                 "backToLogin":  "Back to login",
+                 "resetCodeTitle":  "Enter reset code",
+                 "resetCodeHint":  "Please enter the 6-digit code from your email.",
+                 "resetPasswordTitle":  "Set new password",
+                 "resetPasswordHint":  "Set and save your new password.",
+                 "resetPasswordSubmit":  "Change password"
              },
     "profile":  {
                     "title":  "Set up your profile \u0026 interests",
@@ -191,6 +203,8 @@
                         "errNoMission":  "No mission found for today.",
                         "errNoProfile":  "No profile found.",
                         "errNoTeam":  "No matched team yet. Finish matching on Home first.",
+                        "errNotInTeam":  "You do not have access to this team mission.",
+                        "errNoMatch":  "No matched record found for this team.",
                         "goBack":  "Go back",
                         "peerLabel":  "Teammate",
                         "progress":  "{{done}} / {{total}}",

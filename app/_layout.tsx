@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 
 import { AuthGate } from '@/components/AuthGate';
 import { useColorScheme } from '@/components/useColorScheme';
+import { PushNotificationBootstrap } from '@/src/features/notifications/PushNotificationBootstrap';
 import { initI18n } from '@/src/i18n';
 
 export { ErrorBoundary } from 'expo-router';
@@ -47,12 +48,14 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthGate />
+      <PushNotificationBootstrap />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ title: '' }} />
         <Stack.Screen name="team-mission" />
+        <Stack.Screen name="team/[id]" options={{ title: '' }} />
         <Stack.Screen name="result-card/[id]" options={{ title: '' }} />
         <Stack.Screen name="edit-profile" />
       </Stack>

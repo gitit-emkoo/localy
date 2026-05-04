@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ImageBackground, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ImageBackground, Platform, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -146,6 +146,11 @@ export default function EmailAuthScreen() {
           disabled={busy}
           style={styles.ctaGold}
         />
+        <Pressable
+          onPress={() => router.push('/(auth)/forgot-password' as any)}
+          style={({ pressed }) => [styles.forgotWrap, pressed ? styles.forgotPressed : null]}>
+          <Text style={styles.forgotText}>{t('auth.forgotPassword')}</Text>
+        </Pressable>
           </View>
       </KeyboardAwareScrollView>
     </ImageBackground>
@@ -200,5 +205,18 @@ const styles = StyleSheet.create({
   error: {
     color: '#D92D20',
     fontSize: 13,
+  },
+  forgotWrap: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  forgotPressed: {
+    opacity: 0.7,
+  },
+  forgotText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CTA_GOLD,
+    textDecorationLine: 'underline',
   },
 });

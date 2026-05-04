@@ -20,6 +20,7 @@ import { TextField } from '@/components/forms/TextField';
 import { CAPTION_MAX } from '@/src/constants/profile';
 import {
   loadTeamMissionContext,
+  loadTeamMissionContextByTeamId,
   type SubmissionRow,
   type TeamMissionContext,
 } from '@/src/features/mission/loadTeamMissionContext';
@@ -37,7 +38,12 @@ const FIELD = {
   borderColor: PANEL_BORDER,
 } as const;
 
-export default function TeamMissionScreen() {
+export type TeamMissionBodyProps = {
+  /** 알림 딥링크 등에서 특정 팀으로 진입할 때 사용 */
+  forcedTeamId?: string;
+};
+
+export function TeamMissionBody(props: TeamMissionBodyProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -54,10 +60,12 @@ export default function TeamMissionScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const next = await loadTeamMissionContext();
+    const next = props.forcedTeamId
+      ? await loadTeamMissionContextByTeamId(props.forcedTeamId)
+      : await loadTeamMissionContext();
     setCtx(next);
     setLoading(false);
-  }, []);
+  }, [props.forcedTeamId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,7 +176,11 @@ export default function TeamMissionScreen() {
               ? t('teamMission.errNoMission')
               : ctx.reason === 'no_profile'
                 ? t('teamMission.errNoProfile')
-                : t('teamMission.errNoTeam')}
+                : ctx.reason === 'not_in_team'
+                  ? t('teamMission.errNotInTeam')
+                  : ctx.reason === 'no_match'
+                    ? t('teamMission.errNoMatch')
+                    : t('teamMission.errNoTeam')}
           </Text>
           <Button label={t('teamMission.goBack')} onPress={() => router.back()} style={styles.ctaGold} />
         </View>
@@ -608,3 +620,7 @@ const statusStyles = StyleSheet.create({
     color: '#92400E',
   },
 });
+
+export default function TeamMissionScreen() {
+  return <TeamMissionBody />;
+}

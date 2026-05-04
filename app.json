@@ -38,7 +38,8 @@
           "photosPermission": "Allow Localy to choose a mission photo from your library."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

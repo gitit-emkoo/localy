@@ -16,8 +16,10 @@ export function useMissionRemainingLabel(validToIso: string | undefined | null):
       return;
     }
 
+    const iso = validToIso;
+
     function compute(): string | null {
-      const end = Date.parse(validToIso);
+      const end = Date.parse(iso);
       if (Number.isNaN(end)) return null;
       const remainingMs = end - Date.now();
       if (remainingMs <= 0) {

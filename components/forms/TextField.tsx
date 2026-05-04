@@ -1,4 +1,6 @@
-import { type TextStyle, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, type TextStyle, StyleSheet, TextInput, View } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Text } from '@/components/Themed';
 
@@ -18,6 +20,8 @@ type Props = {
   /** TextInput 스타일 덮어쓰기·추가 */
   inputStyle?: TextStyle;
   secureTextEntry?: boolean;
+  /** 비밀번호 입력 칸에서 눈 아이콘 토글 표시 */
+  enablePasswordToggle?: boolean;
 };
 
 export function TextField({
@@ -34,23 +38,38 @@ export function TextField({
   onFocus,
   inputStyle,
   secureTextEntry,
+  enablePasswordToggle,
 }: Props) {
+  const canToggle = Boolean(secureTextEntry && enablePasswordToggle);
+  const [passwordHidden, setPasswordHidden] = useState(true);
+
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <TextInput
-        style={[styles.input, inputStyle]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        maxLength={maxLength}
-        secureTextEntry={secureTextEntry}
-        onBlur={onBlur}
-        onFocus={onFocus}
-      />
+      <View style={styles.inputWrap}>
+        <TextInput
+          style={[styles.input, canToggle ? styles.inputWithToggle : null, inputStyle]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+          maxLength={maxLength}
+          secureTextEntry={secureTextEntry ? passwordHidden : false}
+          onBlur={onBlur}
+          onFocus={onFocus}
+        />
+        {canToggle ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={passwordHidden ? 'Show password' : 'Hide password'}
+            onPress={() => setPasswordHidden((prev) => !prev)}
+            style={styles.toggleBtn}>
+            <FontAwesome name={passwordHidden ? 'eye' : 'eye-slash'} size={18} color="#6B7280" />
+          </Pressable>
+        ) : null}
+      </View>
       {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
       {helperText && !errorText ? <Text style={styles.helper}>{helperText}</Text> : null}
     </View>
@@ -65,11 +84,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  inputWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
   input: {
     height: 48,
     borderRadius: 14,
     paddingHorizontal: 14,
     backgroundColor: '#F3F4F6',
+  },
+  inputWithToggle: {
+    paddingRight: 44,
+  },
+  toggleBtn: {
+    position: 'absolute',
+    right: 12,
+    height: 30,
+    width: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   helper: {
     fontSize: 12,

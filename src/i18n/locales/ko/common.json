@@ -2,6 +2,9 @@
   "app": { "name": "Localy" },
   "tabs": { "home": "Home", "board": "Board", "world": "World", "my": "My" },
   "nav": { "notifications": "알림", "resultView": "미션 결과" },
+  "notifications": {
+    "inboxEmpty": "아직 알림이 없어요."
+  },
   "auth": {
     "loginHeading": "로그인",
     "signupHeading": "회원가입",
@@ -24,7 +27,16 @@
     "invalidCredentials": "이메일 또는 비밀번호를 확인해 주세요",
     "passwordTooShort": "비밀번호는 최소 {{min}}자 이상이에요",
     "passwordSetFailed": "비밀번호 설정에 실패했어요. 다시 시도해 주세요",
-    "requestFailed": "요청에 실패했어요. 다시 시도해 주세요"
+    "requestFailed": "요청에 실패했어요. 다시 시도해 주세요",
+    "forgotPassword": "비밀번호 찾기",
+    "forgotPasswordHint": "가입한 이메일을 입력하면 재설정 코드를 보내드려요.",
+    "sendResetCode": "재설정 코드 보내기",
+    "backToLogin": "로그인으로 돌아가기",
+    "resetCodeTitle": "재설정 코드 입력",
+    "resetCodeHint": "이메일로 받은 6자리 코드를 입력해 주세요.",
+    "resetPasswordTitle": "새 비밀번호 설정",
+    "resetPasswordHint": "새 비밀번호를 입력하고 변경을 완료해 주세요.",
+    "resetPasswordSubmit": "비밀번호 변경"
   },
   "profile": {
     "title": "프로필과 관심사를 설정해주세요",
@@ -181,6 +193,8 @@
     "errNoMission": "오늘의 미션을 찾을 수 없어요.",
     "errNoProfile": "프로필을 찾을 수 없어요.",
     "errNoTeam": "매칭된 팀이 없어요. 홈에서 매칭이 완료된 뒤 다시 들어와 주세요.",
+    "errNotInTeam": "이 팀 미션을 볼 권한이 없어요.",
+    "errNoMatch": "이 팀에 대한 매칭 기록을 찾을 수 없어요.",
     "goBack": "돌아가기",
     "peerLabel": "팀원",
     "progress": "{{done}} / {{total}}",

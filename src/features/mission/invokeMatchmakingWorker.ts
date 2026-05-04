@@ -1,4 +1,5 @@
 import { supabase } from '@/src/lib/supabase/client';
+import { invokePushDispatcher } from '@/src/features/notifications/invokePushDispatcher';
 
 /** match_requests 기록 후 서버 워커 1회 실행(합의안). 실패해도 매칭 요청 자체는 유효(cron 보강). */
 export async function invokeMatchmakingWorker(input: { matchRequestId: string; missionId: string }) {
@@ -17,5 +18,10 @@ export async function invokeMatchmakingWorker(input: { matchRequestId: string; m
   });
   if (error) {
     console.warn('[invokeMatchmakingWorker]', error.message, data);
+    return;
   }
+
+  // MATCH_COMPLETED 알림 enqueue는 서버 함수에서 이미 수행된다.
+  // 여기서는 pending push job을 한 번 소모한다.
+  void invokePushDispatcher(40);
 }

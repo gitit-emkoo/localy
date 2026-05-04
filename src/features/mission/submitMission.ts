@@ -3,6 +3,7 @@ import { supabase } from '@/src/lib/supabase/client';
 import * as FileSystemLegacy from 'expo-file-system/legacy';
 
 import { compressMissionPhoto } from '@/src/features/mission/compressMissionImage';
+import { invokePushDispatcher } from '@/src/features/notifications/invokePushDispatcher';
 
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -77,6 +78,9 @@ export async function submitMissionPhoto(input: {
     if (ins.error) {
       return { error: new Error(`submission_insert_failed: ${ins.error.message}`) } as const;
     }
+
+    // RESULT_READY enqueue는 DB trigger에서 수행됨. 여기서는 push dispatcher만 트리거.
+    void invokePushDispatcher(40);
 
     return { error: null } as const;
   } catch (e) {

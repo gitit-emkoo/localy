@@ -18,6 +18,7 @@ export default function AccountSettingsScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+  const [pwErrorText, setPwErrorText] = useState<string | null>(null);
 
   const loadEmail = useCallback(async () => {
     const { data } = await supabase.auth.getUser();
@@ -42,26 +43,42 @@ export default function AccountSettingsScreen() {
   }
 
   async function onChangePassword() {
-    if (!loginEmail) return;
+    if (!loginEmail) {
+      setPwErrorText(t('settings.passwordChangeFailed'));
+      return;
+    }
     if (newPassword !== confirmPassword) {
-      Alert.alert('', t('settings.passwordMismatch'));
+      setPwErrorText(t('settings.passwordMismatch'));
       return;
     }
     if (!isValidPasswordLength(newPassword)) {
-      Alert.alert('', t('auth.passwordTooShort', { min: PASSWORD_MIN_LENGTH }));
+      setPwErrorText(t('auth.passwordTooShort', { min: PASSWORD_MIN_LENGTH }));
       return;
     }
     setPwLoading(true);
-    const res = await changePasswordWithCurrent(loginEmail, currentPassword, newPassword);
-    setPwLoading(false);
-    if (res.error) {
-      Alert.alert(t('settings.passwordChangeFailed'), res.error.message);
-      return;
+    setPwErrorText(null);
+    try {
+      const res = await changePasswordWithCurrent(loginEmail, currentPassword, newPassword);
+      if (res.error) {
+        setPwErrorText(`${t('settings.passwordChangeFailed')} (${res.error.message})`);
+        return;
+      }
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      await supabase.auth.signOut();
+      Alert.alert('', t('settings.passwordChangeSuccess'), [
+        {
+          text: t('auth.verify'),
+          onPress: () => router.replace('/(auth)/email' as any),
+        },
+      ]);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'unknown_error';
+      setPwErrorText(`${t('settings.passwordChangeFailed')} (${message})`);
+    } finally {
+      setPwLoading(false);
     }
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    Alert.alert('', t('settings.passwordChangeSuccess'));
   }
 
   const canSubmitPw =
@@ -80,25 +97,39 @@ export default function AccountSettingsScreen() {
         <Text style={styles.sectionTitle}>{t('settings.accountPasswordTitle')}</Text>
         <TextField
           value={currentPassword}
-          onChangeText={setCurrentPassword}
+          onChangeText={(v) => {
+            setCurrentPassword(v);
+            if (pwErrorText) setPwErrorText(null);
+          }}
           placeholder={t('settings.currentPassword')}
           secureTextEntry
+          enablePasswordToggle
           autoCapitalize="none"
         />
         <TextField
           value={newPassword}
-          onChangeText={setNewPassword}
+          onChangeText={(v) => {
+            setNewPassword(v);
+            if (pwErrorText) setPwErrorText(null);
+          }}
           placeholder={t('settings.newPassword')}
           secureTextEntry
+          enablePasswordToggle
           autoCapitalize="none"
         />
         <TextField
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={(v) => {
+            setConfirmPassword(v);
+            if (pwErrorText) setPwErrorText(null);
+          }}
           placeholder={t('settings.confirmPassword')}
           secureTextEntry
+          enablePasswordToggle
           autoCapitalize="none"
+          errorText={confirmPassword.length > 0 && newPassword !== confirmPassword ? t('settings.passwordMismatch') : undefined}
         />
+        {pwErrorText ? <Text style={styles.error}>{pwErrorText}</Text> : null}
         <Button
           label={t('settings.changePassword')}
           variant="secondary"
@@ -142,6 +173,11 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
   emailValue: { fontSize: 15, fontWeight: '600', color: '#111827' },
   sectionTitle: { fontSize: 14, fontWeight: '800', marginTop: 4 },
+  error: {
+    color: '#D92D20',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   logoutButton: {
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,

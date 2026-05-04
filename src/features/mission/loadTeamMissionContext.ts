@@ -28,7 +28,11 @@ export type ResultCardRow = {
 };
 
 export type TeamMissionContext =
-  | { ok: false; reason: 'no_profile' | 'no_mission' | 'no_team'; message?: string }
+  | {
+      ok: false;
+      reason: 'no_profile' | 'no_mission' | 'no_team' | 'not_in_team' | 'no_match';
+      message?: string;
+    }
   | {
       ok: true;
       myProfileId: string;
@@ -77,6 +81,94 @@ export async function loadTeamMissionContext(): Promise<TeamMissionContext> {
   const team = teamRes.data as TeamRow | null;
   if (!team) {
     return { ok: false, reason: 'no_team' };
+  }
+
+  const subRes = await supabase
+    .from('submissions')
+    .select('id, team_id, mission_id, user_id, photo_url, caption_original, submitted_at, status')
+    .eq('team_id', team.id)
+    .eq('status', 'submitted');
+
+  if (subRes.error) {
+    return { ok: false, reason: 'no_team', message: subRes.error.message };
+  }
+
+  const submissions = (subRes.data ?? []) as SubmissionRow[];
+
+  const rcRes = await supabase.from('result_cards').select('id, team_id, mission_id, status').eq('team_id', team.id).maybeSingle();
+
+  const resultCard = (rcRes.data as ResultCardRow | null) ?? null;
+
+  const pRes = await supabase
+    .from('user_profiles')
+    .select('id, nickname, age, country_code, country_name, short_bio')
+    .in('id', [team.user_a_id, team.user_b_id]);
+  if (pRes.error || !pRes.data || pRes.data.length < 2) {
+    return { ok: false, reason: 'no_team', message: pRes.error?.message ?? 'profiles_not_found' };
+  }
+
+  const me = pRes.data.find((p) => p.id === myProfileId) as TeamMemberProfile | undefined;
+  const partner = pRes.data.find((p) => p.id !== myProfileId) as TeamMemberProfile | undefined;
+  if (!me || !partner) {
+    return { ok: false, reason: 'no_team', message: 'invalid_team_profiles' };
+  }
+
+  return {
+    ok: true,
+    myProfileId,
+    mission,
+    team,
+    matchRequest: mr,
+    submissions,
+    resultCard,
+    me,
+    partner,
+    missionTitle: mission.title,
+  };
+}
+
+/** 알림 딥링크 등: 특정 팀 id로 컨텍스트 로드 (팀원이고 matched 기록이 있어야 함). */
+export async function loadTeamMissionContextByTeamId(teamId: string): Promise<TeamMissionContext> {
+  const myProfileId = await getMyProfileId();
+  if (!myProfileId) {
+    return { ok: false, reason: 'no_profile' };
+  }
+
+  const teamRes = await fetchTeam(teamId);
+  const team = teamRes.data as TeamRow | null;
+  if (!team) {
+    return { ok: false, reason: 'no_team' };
+  }
+
+  if (team.user_a_id !== myProfileId && team.user_b_id !== myProfileId) {
+    return { ok: false, reason: 'not_in_team' };
+  }
+
+  const mRes = await supabase.from('missions').select('*').eq('id', team.mission_id).maybeSingle();
+  if (mRes.error || !mRes.data) {
+    return { ok: false, reason: 'no_mission', message: mRes.error?.message };
+  }
+
+  const mission = mRes.data as MissionRow;
+
+  const mrRes = await supabase
+    .from('match_requests')
+    .select('*')
+    .eq('user_id', myProfileId)
+    .eq('mission_id', team.mission_id)
+    .eq('team_id', team.id)
+    .eq('status', 'matched')
+    .order('requested_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (mrRes.error) {
+    return { ok: false, reason: 'no_match', message: mrRes.error.message };
+  }
+
+  const mr = mrRes.data as MatchRequestRow | null;
+  if (!mr) {
+    return { ok: false, reason: 'no_match' };
   }
 
   const subRes = await supabase

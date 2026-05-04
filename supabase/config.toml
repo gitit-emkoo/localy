@@ -5,3 +5,8 @@
 # Auth 사용자 JWT가 ES256인 경우 게이트웨이에서 UNAUTHORIZED_UNSUPPORTED_TOKEN_ALGORITHM(401)이 날 수 있음.
 # MVP 스텁: 게이트 검증 비활성화. 실제 매칭 로직에서는 요청 헤더의 JWT를 함수 내부에서 검증할 것.
 verify_jwt = false
+
+[functions.push-dispatcher]
+# 동일 이슈(ES256 JWT)로 클라이언트 invoke 실패를 피하기 위해 게이트웨이 JWT 검증 비활성화.
+# 함수 내부는 service_role로 DB 접근하여 pending push_jobs만 처리한다.
+verify_jwt = false

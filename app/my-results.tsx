@@ -104,7 +104,7 @@ export default function MyResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#fff',
   },
   content: {
     padding: 16,
@@ -147,16 +147,14 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
+    gap: 8,
   },
   resultCard: {
-    width: '48%',
-    borderRadius: 14,
+    width: '31.5%',
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E5E7EB',
+    borderWidth: 0,
   },
   thumb: {
     width: '100%',

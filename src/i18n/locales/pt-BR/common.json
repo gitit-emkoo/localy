@@ -2,6 +2,9 @@
   "app": { "name": "Localy" },
   "tabs": { "home": "Home", "board": "Board", "world": "World", "my": "My" },
   "nav": { "notifications": "Notificacoes", "resultView": "Resultados da missão" },
+  "notifications": {
+    "inboxEmpty": "Ainda nao ha notificacoes."
+  },
   "country": { "KR": "Coreia", "JP": "Japao", "VN": "Vietna", "PH": "Filipinas", "TW": "Taiwan", "ID": "Indonesia", "BR": "Brasil", "MX": "Mexico" },
   "profile": {
     "interests": "Interesses",
@@ -74,6 +77,8 @@
     "errNoMission": "Nao encontramos a missao de hoje.",
     "errNoProfile": "Perfil nao encontrado.",
     "errNoTeam": "Ainda nao ha time combinado. Conclua o matching na Home primeiro.",
+    "errNotInTeam": "Voce nao tem acesso a esta missao em time.",
+    "errNoMatch": "Nao encontramos registro de match para este time.",
     "goBack": "Voltar",
     "peerLabel": "Parceiro",
     "progress": "{{done}} / {{total}}",

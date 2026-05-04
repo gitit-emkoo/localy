@@ -5,16 +5,17 @@ import { useAuthBootstrap } from '@/src/hooks/useAuthBootstrap';
 import { useAuthStore } from '@/src/stores/useAuthStore';
 
 /**
- * 문서 상태 규칙(5번) 기반 라우팅 가드.
- * - signed_out → (auth)
- * - signed_in + profile_incomplete → (onboarding)
- * - signed_in + profile_completed → (tabs)
+ * ???? ???? ???(5??) ??? ????? ????.
+ * - signed_out ?? (auth)
+ * - signed_in + profile_incomplete ?? (onboarding)
+ * - signed_in + profile_completed ?? (tabs)
  */
 export function AuthGate() {
   useAuthBootstrap();
 
   const router = useRouter();
   const segments = useSegments();
+  const routeName = String(segments[1] ?? '');
 
   const authPhase = useAuthStore((s) => s.authPhase);
   const profilePhase = useAuthStore((s) => s.profilePhase);
@@ -23,7 +24,6 @@ export function AuthGate() {
     if (authPhase === 'booting') return;
 
     const group = String(segments[0] ?? ''); // '(tabs)' | '(auth)' | '(onboarding)' | etc
-
     if (authPhase === 'signed_out') {
       if (group !== '(auth)') {
         router.replace('/(auth)/email' as any);
@@ -33,6 +33,9 @@ export function AuthGate() {
 
     // signed_in
     if (profilePhase === 'profile_incomplete') {
+      if (group === '(auth)' && (routeName === 'verify-reset' || routeName === 'reset-password')) {
+        return;
+      }
       if (group !== '(onboarding)') {
         router.replace('/(onboarding)/profile' as any);
       }
@@ -41,10 +44,14 @@ export function AuthGate() {
 
     if (profilePhase === 'profile_completed') {
       if (group === '(auth)' || group === '(onboarding)') {
+        // ?????? ???? ???? auth ?????? ????? ?? ????? ???? ???.
+        if (group === '(auth)' && (routeName === 'verify-reset' || routeName === 'reset-password')) {
+          return;
+        }
         router.replace('/(tabs)' as any);
       }
     }
-  }, [authPhase, profilePhase, router, segments]);
+  }, [authPhase, profilePhase, routeName, router, segments]);
 
   return null;
 }
