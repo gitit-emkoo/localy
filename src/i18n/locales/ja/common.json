@@ -28,6 +28,8 @@
     "passwordTooShort": "パスワードは{{min}}文字以上にしてください",
     "passwordSetFailed": "パスワードの設定に失敗しました。もう一度お試しください",
     "requestFailed": "リクエストに失敗しました。もう一度お試しください",
+    "loginErrorTimeout": "ログイン処理が長すぎたため中断しました。Wi‑Fi/LTEを切り替えるか、しばらくしてから再試行してください。",
+    "loginErrorNetwork": "Supabaseに接続できませんでした。通信状況とプロジェクトが再開済みか確認してから再試行してください。",
     "forgotPassword": "パスワードをお忘れですか？",
     "forgotPasswordHint": "登録したメールアドレスを入力すると、再設定コードを送信します。",
     "sendResetCode": "再設定コードを送る",
@@ -36,7 +38,8 @@
     "resetCodeHint": "メールで届いた6桁のコードを入力してください。",
     "resetPasswordTitle": "新しいパスワード設定",
     "resetPasswordHint": "新しいパスワードを入力して変更を完了してください。",
-    "resetPasswordSubmit": "パスワードを変更"
+    "resetPasswordSubmit": "パスワードを変更",
+    "resetPasswordSavingHint": "処理中です。回線状況により最大1分ほどかかることがあります。"
   },
   "country": {
     "KR": "韓国",

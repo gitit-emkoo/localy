@@ -110,20 +110,33 @@ export async function updatePassword(
   newPassword: string,
   emailForVerify?: string,
 ): Promise<{ error: Error | null }> {
+  const t0 = Date.now();
   try {
-    const upd = await withTimeout(supabase.auth.updateUser({ password: newPassword }), 45_000);
+    const upd = await withTimeout(supabase.auth.updateUser({ password: newPassword }), 90_000);
+    if (PW_DBG) {
+      console.warn('[updatePassword] updateUser ok', { ms: Date.now() - t0 });
+    }
     return { error: upd.error ? new Error(upd.error.message) : null };
   } catch (e) {
     const message = e instanceof Error ? e.message : 'unknown_error';
+    if (PW_DBG) {
+      console.warn('[updatePassword] updateUser threw', { ms: Date.now() - t0, message });
+    }
     if (message.startsWith('timeout:') && emailForVerify) {
       // 서버 반영은 되었는데 클라이언트 응답만 지연되는 경우를 보정한다.
       const verifyClient = createEphemeralVerifyClient();
-      const verifyRes = await verifyClient.auth.signInWithPassword({
-        email: emailForVerify,
-        password: newPassword,
-      });
+      const verifyRes = await withTimeout(
+        verifyClient.auth.signInWithPassword({
+          email: emailForVerify,
+          password: newPassword,
+        }),
+        60_000,
+      );
       void verifyClient.auth.signOut().catch(() => {});
       if (!verifyRes.error) {
+        if (PW_DBG) {
+          console.warn('[updatePassword] recovered after timeout via signIn only', { totalMs: Date.now() - t0 });
+        }
         return { error: null };
       }
     }

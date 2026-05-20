@@ -8,12 +8,16 @@ import { TextField } from '@/components/forms/TextField';
 import { Button } from '@/components/ui/Button';
 import { isValidPasswordLength, PASSWORD_MIN_LENGTH, updatePassword } from '@/src/features/auth/password';
 import { supabase } from '@/src/lib/supabase/client';
+import { useAuthStore } from '@/src/stores/useAuthStore';
 
 const CTA_GOLD = '#D4A017';
 
 export default function ResetPasswordScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const setSession = useAuthStore((s) => s.setSession);
+  const setAuthPhase = useAuthStore((s) => s.setAuthPhase);
+  const setProfilePhase = useAuthStore((s) => s.setProfilePhase);
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const emailParam = Array.isArray(params.email) ? params.email[0] : params.email;
 
@@ -27,11 +31,11 @@ export default function ResetPasswordScreen() {
     [password, confirmPassword],
   );
 
-  async function signOutNonBlocking() {
-    // signOut이 네트워크 상태에 따라 오래 걸릴 수 있어 UI 성공 표시를 막지 않도록 제한 시간만 기다린다.
+  async function signOutBestEffort() {
+    // signOut 내부 락/네트워크 지연으로 UI가 멈추지 않게, 로컬 세션 삭제는 짧게만 기다린다.
     await Promise.race([
-      supabase.auth.signOut(),
-      new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+      supabase.auth.signOut({ scope: 'local' }),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
     ]).catch(() => {});
   }
 
@@ -54,7 +58,11 @@ export default function ResetPasswordScreen() {
         return;
       }
 
-      await signOutNonBlocking();
+      await signOutBestEffort();
+      // 네트워크 signOut 성공 여부와 관계없이 앱 상태를 signed_out으로 고정해 홈으로 튕김을 방지한다.
+      setSession(null);
+      setAuthPhase('signed_out');
+      setProfilePhase('unknown');
 
       Alert.alert('', t('settings.passwordChangeSuccess'), [
         {
@@ -109,6 +117,8 @@ export default function ResetPasswordScreen() {
 
         {errorText ? <Text style={styles.error}>{errorText}</Text> : null}
 
+        {submitting ? <Text style={styles.savingHint}>{t('auth.resetPasswordSavingHint')}</Text> : null}
+
         <Button
           label={t('auth.resetPasswordSubmit')}
           onPress={() => void onReset()}
@@ -157,5 +167,12 @@ const styles = StyleSheet.create({
   error: {
     color: '#D92D20',
     fontSize: 13,
+  },
+  savingHint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });

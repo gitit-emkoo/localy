@@ -23,6 +23,18 @@ function isValidEmail(email: string) {
 
 type Pending = 'idle' | 'login';
 
+async function withTimeout<T>(promise: Promise<T>, ms = 60000): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`timeout:${ms}ms`)), ms);
+  });
+  try {
+    return (await Promise.race([promise, timeoutPromise])) as T;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 export default function EmailAuthScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -61,13 +73,28 @@ export default function EmailAuthScreen() {
     setPending('login');
     setErrorText(null);
     clearSignupDraft();
-    const res = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
-    setPending('idle');
-    if (res.error) {
-      setErrorText(t('auth.invalidCredentials'));
-      return;
+    try {
+      const res = await withTimeout(supabase.auth.signInWithPassword({ email: trimmedEmail, password }), 60000);
+      if (res.error) {
+        setErrorText(t('auth.invalidCredentials'));
+        return;
+      }
+      router.replace('/(tabs)' as any);
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[email][onLogin]', raw);
+      }
+      if (raw.startsWith('timeout:')) {
+        setErrorText(t('auth.loginErrorTimeout'));
+      } else if (/network|fetch/i.test(raw)) {
+        setErrorText(t('auth.loginErrorNetwork'));
+      } else {
+        setErrorText(`${t('auth.requestFailed')} (${raw})`);
+      }
+    } finally {
+      setPending('idle');
     }
-    router.replace('/(tabs)' as any);
   }
 
   return (

@@ -38,6 +38,8 @@
                  "passwordTooShort":  "Password must be at least {{min}} characters",
                  "passwordSetFailed":  "Couldn\u0027t set password. Please try again.",
                  "requestFailed":  "Request failed. Please try again",
+                 "loginErrorTimeout":  "Login took too long and was stopped. Switch Wi‑Fi/LTE or try again shortly. If your password is correct, Supabase may be slow to wake up.",
+                 "loginErrorNetwork":  "Could not reach Supabase. Check your internet and that the Supabase project is resumed, then try again.",
                  "forgotPassword":  "Forgot password?",
                  "forgotPasswordHint":  "Enter your signup email and we\u0027ll send a reset code.",
                  "sendResetCode":  "Send reset code",
@@ -46,7 +48,8 @@
                  "resetCodeHint":  "Please enter the 6-digit code from your email.",
                  "resetPasswordTitle":  "Set new password",
                  "resetPasswordHint":  "Set and save your new password.",
-                 "resetPasswordSubmit":  "Change password"
+                 "resetPasswordSubmit":  "Change password",
+                 "resetPasswordSavingHint":  "Processing… This may take up to about a minute depending on your network."
              },
     "profile":  {
                     "title":  "Set up your profile \u0026 interests",
